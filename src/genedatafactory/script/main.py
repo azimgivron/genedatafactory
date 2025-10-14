@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+import ssl
 import time
 import urllib.error
 import urllib.request
 import yaml
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Union
 from importlib.resources import files
 
 import pandas as pd  # for type hints and saving CSVs
@@ -20,53 +21,81 @@ from genedatafactory.gene.pathway import read_pathway
 from genedatafactory.gene.string_net import read_string
 from genedatafactory.disease.variant import read_variant
 
-
-def load_config(config_path: Path) -> dict:
-    """Load YAML configuration file."""
-    with config_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
 CONFIG: Dict[str, Any] = {}
 FILES = None
 STRING_KWARGS = None
 UA = None
 
 
+try:
+    import certifi
+    _CERTIFI = certifi.where()
+except Exception:
+    _CERTIFI = None
+
+
 def download_with_retries(
-    url: str, dest: Path, attempts: int = 4, backoff: float = 1.5, timeout: int = 60
+    url: str,
+    dest: Path,
+    attempts: int = 4,
+    backoff: float = 1.5,
+    timeout: int = 60,
+    verify: Union[bool, Path, str, None] = True,
+    proxies_from_env: bool = True,
 ) -> None:
-    """Download a file with retries and exponential backoff.
+    """Download a file with retry and SSL options.
+
+    Attempts to download a file from a URL with exponential backoff on failure.
+    Supports configurable SSL verification and optional proxy settings.
 
     Args:
-        url: File URL to download.
-        dest: Destination file path.
-        attempts: Maximum retry attempts.
-        backoff: Exponential backoff base in seconds.
-        timeout: Timeout per attempt in seconds.
+        url (str): URL of the file to download.
+        dest (Path): Destination path for the downloaded file.
+        attempts (int, optional): Maximum retry attempts. Defaults to 4.
+        backoff (float, optional): Base for exponential backoff between retries. Defaults to 1.5.
+        timeout (int, optional): Timeout per attempt in seconds. Defaults to 60.
+        verify (bool | Path | str | None, optional): SSL verification mode.
+            - True: Use certifi/system CA (default).
+            - False: Disable SSL verification.
+            - Path/str: Path to custom CA bundle.
+        proxies_from_env (bool, optional): Use environment proxy settings. Defaults to True.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
+
+    # Build SSL context
+    if verify is False:
+        ctx = ssl._create_unverified_context()
+    else:
+        ctx = ssl.create_default_context()
+        if isinstance(verify, (str, Path)):
+            ctx.load_verify_locations(cafile=str(verify))
+        elif verify is True and _CERTIFI:
+            ctx.load_verify_locations(cafile=_CERTIFI)
+        # else: use system CA store
+
+    # Build opener
+    handlers = []
+    if proxies_from_env:
+        handlers.append(urllib.request.ProxyHandler())  # respects *_PROXY env vars
+    handlers.append(urllib.request.HTTPSHandler(context=ctx))
+    opener = urllib.request.build_opener(*handlers)
+
     req = urllib.request.Request(url, headers={"User-Agent": UA})
 
     for i in range(1, attempts + 1):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as r, dest.open(
-                "wb"
-            ) as f:
+            with opener.open(req, timeout=timeout) as r, dest.open("wb") as f:
                 while True:
                     chunk = r.read(8192)
                     if not chunk:
                         break
                     f.write(chunk)
             return
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ssl.SSLError) as e:
             if i == attempts:
                 raise
             sleep_s = backoff ** (i - 1)
-            print(
-                f"  Attempt {i}/{attempts} failed ({e}). Retrying in {sleep_s:.1f}s...",
-                file=sys.stderr,
-            )
+            print(f"  Attempt {i}/{attempts} failed ({e}). Retrying in {sleep_s:.1f}s...", file=sys.stderr)
             time.sleep(sleep_s)
 
 
@@ -211,8 +240,8 @@ def main() -> None:
     FILES = CONFIG["files"]
     STRING_KWARGS = CONFIG["string_api"]
     UA = CONFIG["user_agent"]
-    ensure_files(args.input_folder)
-    process_files(args.input_folder, args.output_folder)
+    ensure_files(args.input)
+    process_files(args.input, args.output)
 
 
 if __name__ == "__main__":
