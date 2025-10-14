@@ -7,6 +7,7 @@ click==8.3.0
 docopt-ng==0.9.0
 et_xmlfile==2.0.0
 ftpretty==0.4.0
+genedatafactory @ git+https://github.com/azimgivron/genedatafactory.git@6af9ee0b0a9a9e0f728b5a58d60a1abe8ffa0e5a
 goatools==1.5.2
 idna==3.10
 markdown-it-py==4.0.0
@@ -30,6 +31,7 @@ pyparsing==3.2.5
 python-dateutil==2.9.0.post0
 pytokens==0.1.10
 pytz==2025.2
+PyYAML==6.0.3
 requests==2.32.5
 rich==14.2.0
 scipy==1.16.2

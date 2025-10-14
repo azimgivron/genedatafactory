@@ -37,13 +37,13 @@ pip install -e .
 Once installed, the main data generation process can be launched from the command line:
 
 ```bash
-genedatafactory -i <input_folder> -o <output_folder> -c <config_file_path>
+genedatafactory -i <input_folder> -o <output_folder>
 ```
 
 **Example:**
 
 ```bash
-genedatafactory -i ./data/raw -o ./data/processed -c ./config.yaml
+genedatafactory -i ./data/raw -o ./data/processed
 ```
 
 ### 🧩 What it does

@@ -28,9 +28,9 @@ def load_config(config_path: Path) -> dict:
 
 
 CONFIG: Dict[str, Any] = {}
-FILES = CONFIG["files"]
-STRING_KWARGS = CONFIG["string_api"]
-UA = CONFIG["user_agent"]
+FILES = None
+STRING_KWARGS = None
+UA = None
 
 
 def download_with_retries(
@@ -205,9 +205,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """Entry point."""
     args = parse_args()
-    global CONFIG
+    global CONFIG, FILES, STRING_KWARGS, UA
     config_text = (files("genedatafactory") / "config.yaml").read_text()
     CONFIG = yaml.safe_load(config_text)
+    FILES = CONFIG["files"]
+    STRING_KWARGS = CONFIG["string_api"]
+    UA = CONFIG["user_agent"]
     ensure_files(args.input_folder)
     process_files(args.input_folder, args.output_folder)
 
