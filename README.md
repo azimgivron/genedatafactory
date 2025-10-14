@@ -22,12 +22,12 @@ This package forms the first stage of a complete **gene prioritization pipeline*
 
 For *users*:
 ```bash
-pip install git+https://github.com/<your-username>/genedatafactory.git
+pip install git+https://github.com/azimgivron/genedatafactory.git
 ```
 
 or for *developpers*:
 ```bash
-git clone https://github.com/<your-username>/genedatafactory.git
+git clone https://github.com/azimgivron/genedatafactory.git
 cd genedatafactory
 pip install -e .
 ````
