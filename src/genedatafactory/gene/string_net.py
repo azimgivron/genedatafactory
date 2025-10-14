@@ -1,6 +1,6 @@
 import time
 from io import StringIO
-from typing import List, Dict, Iterable
+from typing import Dict, Iterable, List
 
 import numpy as np
 import pandas as pd
@@ -55,7 +55,7 @@ def read_string(
 ) -> pd.DataFrame:
     """Construct a weighted gene-gene interaction network from STRING.
 
-    Maps NCBI Gene IDs to STRING protein IDs, retrieves interactions in batches, 
+    Maps NCBI Gene IDs to STRING protein IDs, retrieves interactions in batches,
     and produces an undirected network with confidence scores.
 
     Args:

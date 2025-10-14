@@ -1,25 +1,25 @@
 from __future__ import annotations
 
 import argparse
-import sys
 import ssl
+import sys
 import time
 import urllib.error
 import urllib.request
-import yaml
+from importlib.resources import files
 from pathlib import Path
 from typing import Any, Dict, Union
-from importlib.resources import files
 
 import pandas as pd  # for type hints and saving CSVs
+import yaml
 
-from genedatafactory.gene_disease.omim import read_omim
-from genedatafactory.gene.go import read_go
 from genedatafactory.disease.hpo import read_hpo
-from genedatafactory.gene.swissprot import read_swissprot
+from genedatafactory.disease.variant import read_variant
+from genedatafactory.gene.go import read_go
 from genedatafactory.gene.pathway import read_pathway
 from genedatafactory.gene.string_net import read_string
-from genedatafactory.disease.variant import read_variant
+from genedatafactory.gene.swissprot import read_swissprot
+from genedatafactory.gene_disease.omim import read_omim
 
 CONFIG: Dict[str, Any] = {}
 FILES = None
@@ -29,6 +29,7 @@ UA = None
 
 try:
     import certifi
+
     _CERTIFI = certifi.where()
 except Exception:
     _CERTIFI = None
@@ -91,11 +92,19 @@ def download_with_retries(
                         break
                     f.write(chunk)
             return
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, ssl.SSLError) as e:
+        except (
+            urllib.error.HTTPError,
+            urllib.error.URLError,
+            TimeoutError,
+            ssl.SSLError,
+        ) as e:
             if i == attempts:
                 raise
             sleep_s = backoff ** (i - 1)
-            print(f"  Attempt {i}/{attempts} failed ({e}). Retrying in {sleep_s:.1f}s...", file=sys.stderr)
+            print(
+                f"  Attempt {i}/{attempts} failed ({e}). Retrying in {sleep_s:.1f}s...",
+                file=sys.stderr,
+            )
             time.sleep(sleep_s)
 
 
@@ -225,11 +234,18 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="Download, process, and export biomedical reference data."
     )
-    p.add_argument("-i", "--input", type=Path, required=True, help="Folder to store raw files.")
     p.add_argument(
-        "-o", "--output", type=Path, required=True, help="Folder to write processed CSV files."
+        "-i", "--input", type=Path, required=True, help="Folder to store raw files."
     )
-    return p.parse_args()    
+    p.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="Folder to write processed CSV files.",
+    )
+    return p.parse_args()
+
 
 def main() -> None:
     """Entry point."""

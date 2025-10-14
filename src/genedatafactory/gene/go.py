@@ -8,12 +8,11 @@ The feature vector is a binary numpy array aligned to a stable GO vocabulary
 
 from __future__ import annotations
 
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Set
 
 import numpy as np
 import pandas as pd
-from concurrent.futures import ProcessPoolExecutor, as_completed
-
 from goatools.obo_parser import GODag
 
 

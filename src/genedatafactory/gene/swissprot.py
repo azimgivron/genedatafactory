@@ -1,5 +1,6 @@
 import gzip
 from typing import List, Set
+
 import pandas as pd
 from Bio import SwissProt
 

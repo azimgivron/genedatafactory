@@ -1,7 +1,8 @@
 from typing import List
+
+import pandas as pd
 from pyhpo import Ontology
 from pyhpo.annotations import Omim
-import pandas as pd
 
 
 def read_hpo(omim_id: List[int]) -> pd.DataFrame:

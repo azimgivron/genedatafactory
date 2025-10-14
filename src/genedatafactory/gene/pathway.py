@@ -1,5 +1,6 @@
-import pandas as pd
 from typing import List
+
+import pandas as pd
 
 
 def read_pathway(pathway_path: str, geneid: List[int]) -> pd.DataFrame:
