@@ -10,7 +10,6 @@ files:
   CLINVAR: "variant_summary.txt.gz"
   MONDO: "mondo.obo"
 
-
 url:
   mim2gene_medgen: "https://ftp.ncbi.nih.gov/gene/DATA/mim2gene_medgen"
   go-basic.obo: "https://current.geneontology.org/ontology/go-basic.obo"
