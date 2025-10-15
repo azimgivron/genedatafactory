@@ -15,7 +15,7 @@ This package forms the first stage of a complete **gene prioritization pipeline*
 * 🧩 **Data integration** across genes, diseases, and ontology resources
 * 🧠 **Preprocessing utilities** for graph- and matrix-based representations
 * 🧾 **Reproducible exports** to CSV for downstream modeling
-* 🔗 **Gene and Disease network access** from PPI graph construction and ClinVar dataset
+* 🔗 **Gene network access** from PPI graph construction
 * 🧪 Designed for research in **bioinformatics**, **genetics**, and **machine learning**
 
 ## 🧰 Installation
@@ -66,9 +66,9 @@ src/
     ├── go.py
     ├── hpo.py
     ├── swissprot.py
-    ├── pathway.py
+    ├── reactome.py
     ├── string_net.py
-    ├── variant.py
+    ├── clinvar.py
     ├── mondo.py
     ├── config.yaml           # URLs and parameters for datasets
     └── _version.py           # Auto-generated version file
@@ -90,7 +90,7 @@ By combining these heterogeneous data types, the framework captures a **multifac
 | **Reactome**                                   | Pathway database                           | Curated molecular pathways describing how gene products interact in biological processes.                                                                       | Captures **pathway-level co-involvement**, helping identify genes participating in the same mechanistic routes as known disease genes. |
 | **MONDO (Monarch Disease Ontology)**           | Disease ontology                           | Integrates multiple disease classification systems (OMIM, Orphanet, DOID, etc.) into a unified ontology.                                                        | Provides a **hierarchical disease structure**, facilitating generalization between related disorders.                                  |
 | **STRING**                                     | Protein–protein interaction network        | Aggregates experimental and predicted gene–gene associations based on co-expression, text mining, and database co-occurrence.                                   | Encodes **topological proximity** between genes. Helps infer potential disease genes through network diffusion and embedding methods.  |
-| **ClinVar**                                    | Variant and clinical significance database | Contains clinically observed genetic variants linked to diseases, along with their interpretations (e.g., pathogenic, benign).                                  | Enables construction of **disease–disease similarity networks** based on shared causal genes, improving disease-level inference.       |
+| **ClinVar**                                    | Variant and clinical significance database | Contains clinically observed genetic variants linked to diseases, along with their interpretations (e.g., pathogenic, benign).                                  | Enables construction of a second gene disease association dataset based on variants.       |
 
 ### 🧠 Integration Rationale
 

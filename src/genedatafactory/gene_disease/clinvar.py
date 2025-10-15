@@ -1,42 +1,8 @@
-import itertools
 import re
 from typing import List
 
 import numpy as np
 import pandas as pd
-
-
-def compute_edges(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute all unique MIM-MIM edges per gene.
-
-    Groups variants by GeneID, generates all pairwise MIM combinations,
-    and attaches the corresponding ClinicalSignificance value.
-
-    Args:
-        df: DataFrame with columns ['GeneID', 'MIM', 'ClinicalSignificance'].
-
-    Returns:
-        DataFrame with columns ['MIM_i', 'MIM_j', 'ClinicalSignificance'].
-    """
-    edges = (
-        df.groupby("GeneID", group_keys=False)[["MIM", "ClinicalSignificance"]]
-        .apply(
-            lambda g: pd.Series(
-                {
-                    "ClinicalSignificance": g["ClinicalSignificance"].iloc[0],
-                    "edge": list(
-                        itertools.combinations(sorted(set(g["MIM"].dropna())), 2)
-                    ),
-                }
-            )
-        )
-        .reset_index()
-    )
-
-    edges = edges.explode("edge", ignore_index=True)
-    edges[["MIM_i", "MIM_j"]] = pd.DataFrame(edges["edge"].tolist(), index=edges.index)
-    edges = edges[["MIM_i", "MIM_j", "ClinicalSignificance"]]
-    return edges
 
 
 def extract_mim_numbers(df: pd.DataFrame) -> pd.DataFrame:
@@ -88,15 +54,15 @@ def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
     """Load ClinVar variant summary and build filtered MIM-MIM edge list.
 
     Reads ClinVar's variant_summary.txt.gz, extracts OMIM identifiers,
-    filters by the provided disease IDs, converts clinical significance
-    to numeric form, and constructs all pairwise MIM edges per gene.
+    filters by the provided disease IDs and converts clinical significance
+    to numeric form.
 
     Args:
         path: Path to ClinVar variant_summary.txt.gz.
         diseaseid: List of OMIM integer IDs to filter by.
 
     Returns:
-        DataFrame with columns ['MIM_i', 'MIM_j', 'ClinicalSignificance'].
+        DataFrame with columns ['GeneID', 'MIM', 'ClinicalSignificance'].
     """
     df = pd.read_csv(
         path,
@@ -161,6 +127,4 @@ def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
     df = extract_mim_numbers(df)
     df = df.explode("MIM", ignore_index=True)
     df = df[df["MIM"].isin(diseaseid)].reset_index(drop=True)
-    df = compute_edges(df)
-
     return df

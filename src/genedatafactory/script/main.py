@@ -13,7 +13,7 @@ from typing import Any, Dict, Union
 import pandas as pd  # for type hints and saving CSVs
 import yaml
 
-from genedatafactory.disease.clinvar import read_clinvar
+from genedatafactory.gene_disease.clinvar import read_clinvar
 from genedatafactory.disease.hpo import read_hpo
 from genedatafactory.disease.mondo import read_mondo
 from genedatafactory.gene.go import read_go
@@ -228,7 +228,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
 
     # ClinVar variants
     clinvar = read_clinvar(str(clinvar_path), diseaseid)
-    report("Clinvar data", clinvar, ["MIM_i"])
+    report("Clinvar data", clinvar, ["GeneID"])
     save_df(clinvar, "clinvar", output_dir)
 
 
