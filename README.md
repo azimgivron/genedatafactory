@@ -120,7 +120,7 @@ All datasets are stored in a **sparse format**, meaning that only entries with n
 | **Reactome Pathways**       | `reactome.csv`     | Binary feature matrix for genes across Reactome pathways. A value of **1** indicates that the gene participates in the pathway.                                                                                      |
 | **Mondo Annotations**       | `mondo.csv`        | Binary feature matrix for diseases (OMIM IDs) across all MONDO terms.                                                                                                                                                |
 | **STRING Network**          | `string.csv`       | Gene–gene interaction network derived from STRING database. Each edge represents a protein–protein interaction (PPI) with confidence scores provided by STRING.                                                      |
-| **ClinVar Variant Network** | `clinvar.csv`      | Disease–disease network built from ClinVar. Two diseases are connected if they share at least one causal gene, with the edge weight reflecting the degree of shared genetic evidence.                                |
+| **ClinVar Variant Network** | `clinvar.csv`      | Gene–disease association table derived from ClinVar. Each record represents a validated association between a gene (NCBI Gene ID) and a disease (OMIM ID), annotated with the confidence or clinical significance level of the association.                                |
 
 ### 🧠 **Conceptual Summary**
 
