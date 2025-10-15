@@ -15,6 +15,9 @@ import numpy as np
 import pandas as pd
 from goatools.obo_parser import GODag
 
+_GO_DAG = None
+_TERM_INDEX = None
+
 
 def load_gene2go_human(path_gz: str) -> pd.DataFrame:
     """Load and parse the human subset of the NCBI gene2go.gz file.
@@ -65,10 +68,6 @@ def load_gene2go_human(path_gz: str) -> pd.DataFrame:
     )  # type: ignore
     df["GO_ID"] = df["GO_ID"].str.strip()
     return df[["GeneID", "GO_ID", "Evidence", "Category"]]
-
-
-_GO_DAG = None
-_TERM_INDEX = None
 
 
 def _init_worker(go_obo_path: str, term_index: dict[str, int]):

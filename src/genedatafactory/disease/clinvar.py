@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def compute_edges(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute all unique MIM–MIM edges per gene.
+    """Compute all unique MIM-MIM edges per gene.
 
     Groups variants by GeneID, generates all pairwise MIM combinations,
     and attaches the corresponding ClinicalSignificance value.
@@ -84,8 +84,8 @@ def map_cat(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def read_variant(path: str, diseaseid: List[int]) -> pd.DataFrame:
-    """Load ClinVar variant summary and build filtered MIM–MIM edge list.
+def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
+    """Load ClinVar variant summary and build filtered MIM-MIM edge list.
 
     Reads ClinVar's variant_summary.txt.gz, extracts OMIM identifiers,
     filters by the provided disease IDs, converts clinical significance

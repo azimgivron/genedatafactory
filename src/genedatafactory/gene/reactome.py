@@ -3,11 +3,11 @@ from typing import List
 import pandas as pd
 
 
-def read_pathway(pathway_path: str, geneid: List[int]) -> pd.DataFrame:
+def read_reactome(path: str, geneid: List[int]) -> pd.DataFrame:
     """Read and filter Reactome NCBI2Reactome mapping file.
 
     Args:
-        pathway_path (str): Path to the Reactome mapping file (e.g., 'NCBI2Reactome.txt').
+        path (str): Path to the Reactome mapping file (e.g., 'NCBI2Reactome.txt').
         geneid (List[int]): List of NCBI Gene IDs to retain.
 
     Returns:
@@ -15,7 +15,7 @@ def read_pathway(pathway_path: str, geneid: List[int]) -> pd.DataFrame:
             gene-pathway associations limited to the provided GeneIDs.
     """
     df = pd.read_csv(
-        pathway_path,
+        path,
         sep="\t",
         header=None,
         names=["GeneID", "PathwayName", "PathwayID", "URL", "Evidence", "Species"],

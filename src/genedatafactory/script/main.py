@@ -13,10 +13,11 @@ from typing import Any, Dict, Union
 import pandas as pd  # for type hints and saving CSVs
 import yaml
 
+from genedatafactory.disease.clinvar import read_clinvar
 from genedatafactory.disease.hpo import read_hpo
-from genedatafactory.disease.variant import read_variant
+from genedatafactory.disease.mondo import read_mondo
 from genedatafactory.gene.go import read_go
-from genedatafactory.gene.pathway import read_pathway
+from genedatafactory.gene.reactome import read_reactome
 from genedatafactory.gene.string_net import read_string
 from genedatafactory.gene.swissprot import read_swissprot
 from genedatafactory.gene_disease.omim import read_omim
@@ -25,7 +26,7 @@ CONFIG: Dict[str, Any] = {}
 FILES = None
 STRING_KWARGS = None
 UA = None
-
+NAMES = None
 
 try:
     import certifi
@@ -179,12 +180,13 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
         input_dir: Directory containing raw files.
         output_dir: Directory to save processed CSV files.
     """
-    gd_path = input_dir / "mim2gene_medgen"
-    go_path = input_dir / "go-basic.obo"
-    gene2go_path = input_dir / "gene2go.gz"
-    swissprot_path = input_dir / "uniprot_sprot.dat.gz"
-    pathway_path = input_dir / "NCBI2Reactome_All_Levels.txt"
-    variant_path = input_dir / "variant_summary.txt.gz"
+    gd_path = input_dir / NAMES["OMIM"]
+    go_path = input_dir / NAMES["GO"]
+    gene2go_path = input_dir / NAMES["GO_2"]
+    swissprot_path = input_dir / NAMES["SWISSPROT"]
+    reactome_path = input_dir / NAMES["REACTOME"]
+    clinvar_path = input_dir / NAMES["CLINVAR"]
+    mondo_path = input_dir / NAMES["MONDO"]
 
     # Gene–disease relationships
     gene_disease = read_omim(str(gd_path))
@@ -209,10 +211,15 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     report("SWISS PROT data", swissprot, ["GeneID"])
     save_df(swissprot, "swissprot", output_dir)
 
-    # Pathway
-    pathway = read_pathway(str(pathway_path), geneid)
-    report("Pathway data", pathway, ["GeneID"])
-    save_df(pathway, "pathway", output_dir)
+    # Reactome
+    reactome = read_reactome(str(reactome_path), geneid)
+    report("Reactome data", reactome, ["GeneID"])
+    save_df(reactome, "reactome", output_dir)
+
+    # Mondo
+    mondo = read_mondo(str(mondo_path), diseaseid)
+    report("Mondo data", mondo, ["MIM"])
+    save_df(mondo, "mondo", output_dir)
 
     # STRING
     string = read_string(geneid=geneid, **STRING_KWARGS)
@@ -220,9 +227,9 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     save_df(string, "string", output_dir)
 
     # ClinVar variants
-    variant = read_variant(str(variant_path), diseaseid)
-    report("VARIANT data", variant, ["MIM_i"])
-    save_df(variant, "variant", output_dir)
+    clinvar = read_clinvar(str(clinvar_path), diseaseid)
+    report("Clinvar data", clinvar, ["MIM_i"])
+    save_df(clinvar, "clinvar", output_dir)
 
 
 def parse_args() -> argparse.Namespace:
@@ -250,10 +257,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """Entry point."""
     args = parse_args()
-    global CONFIG, FILES, STRING_KWARGS, UA
+    global CONFIG, FILES, STRING_KWARGS, UA, NAMES
     config_text = (files("genedatafactory") / "config.yaml").read_text()
     CONFIG = yaml.safe_load(config_text)
-    FILES = CONFIG["files"]
+    FILES = CONFIG["url"]
+    NAMES = CONFIG["files"]
     STRING_KWARGS = CONFIG["string_api"]
     UA = CONFIG["user_agent"]
     ensure_files(args.input)

@@ -68,6 +68,7 @@ src/
     ├── pathway.py
     ├── string_net.py
     ├── variant.py
+    ├── mondo.py
     ├── config.yaml           # URLs and parameters for datasets
     └── _version.py           # Auto-generated version file
 ```
@@ -85,9 +86,10 @@ All datasets are stored in a **sparse format**, meaning that only entries with n
 | **HPO Annotations**         | `hpo.csv`          | Binary feature matrix for diseases (OMIM IDs) across all HPO terms. A value of **1** indicates that the disease is annotated with the term (including propagated ancestors in the ontology), and **0** otherwise.    |
 | **GO Annotations**          | `go.csv`           | Binary feature matrix for genes (NCBI Gene IDs) across Gene Ontology (GO) terms. Encodes biological process, molecular function, and cellular component annotations, including propagated terms at all three levels. |
 | **SwissProt Annotations**   | `swissprot.csv`    | Binary feature matrix for genes based on UniProt/SwissProt protein annotations. Similar to GO, each column represents a functional or structural protein feature linked to the gene.                                 |
-| **Reactome Pathways**       | `pathway.csv`      | Binary feature matrix for genes across Reactome pathways. A value of **1** indicates that the gene participates in the pathway.                                                                                      |
+| **Reactome Pathways**       | `reactome.csv`      | Binary feature matrix for genes across Reactome pathways. A value of **1** indicates that the gene participates in the pathway.                                                                                      |
+| **Mondo Annotations**       | `mondo.csv`      | Binary feature matrix for diseases (OMIM IDs) across all MONDO terms.|
 | **STRING Network**          | `string.csv`       | Gene–gene interaction network derived from STRING database. Each edge represents a protein–protein interaction (PPI) with confidence scores provided by STRING.                                                      |
-| **ClinVar Variant Network** | `variant.csv`      | Disease–disease network built from ClinVar. Two diseases are connected if they share at least one causal gene, with the edge weight reflecting the degree of shared genetic evidence.                                |
+| **ClinVar Variant Network** | `clinvar.csv`      | Disease–disease network built from ClinVar. Two diseases are connected if they share at least one causal gene, with the edge weight reflecting the degree of shared genetic evidence.                                |
 
 ### 🧠 **Conceptual Summary**
 

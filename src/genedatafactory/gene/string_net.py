@@ -1,6 +1,6 @@
 import time
 from io import StringIO
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Set
 
 import numpy as np
 import pandas as pd
@@ -43,36 +43,26 @@ def _post_tsv(url: str, data: Dict, sleep_s: float = 0.3) -> pd.DataFrame:
     return df
 
 
-def read_string(
-    url_map: str,
-    url_net: str,
+def get_mappings(
     geneid: List[int],
-    caller: str = "user",
-    species: int = 9606,
-    map_batch: int = 1000,
-    net_batch: int = 1000,
-    sleep_s: float = 0.3,
+    map_batch: int,
+    species: int,
+    caller: str,
+    url_map: str,
+    sleep_s: float,
 ) -> pd.DataFrame:
-    """Construct a weighted gene-gene interaction network from STRING.
-
-    Maps NCBI Gene IDs to STRING protein IDs, retrieves interactions in batches,
-    and produces an undirected network with confidence scores.
+    """Maps NCBI Gene IDs to STRING protein IDs.
 
     Args:
-        url_map (str): STRING API URL for ID mapping.
-        url_net (str): STRING API URL for network retrieval.
         geneid (List[int]): NCBI Gene IDs to include.
-        caller (str, optional): Identifier for API logging. Defaults to "user".
-        species (int, optional): NCBI taxon ID. Defaults to 9606 (human).
-        map_batch (int, optional): Mapping batch size. Defaults to 1000.
-        net_batch (int, optional): Network batch size. Defaults to 1000.
-        sleep_s (float, optional): Delay between requests. Defaults to 0.3.
+        map_batch (int): Mapping batch size.
+        species (int): NCBI taxon ID.
+        caller (str): Identifier for API logging.
+        url_map (str): STRING API URL for ID mapping.
+        sleep_s (float): Delay between requests.
 
     Returns:
-        pd.DataFrame: Undirected edge list with columns:
-            - GeneID_i (int)
-            - GeneID_j (int)
-            - Weight (float)
+        pd.DataFrame: Mapping of NCBI Gene IDs to STRING protein IDs.
     """
     mappings = []
     for batch in _chunks(geneid, map_batch):
@@ -87,14 +77,39 @@ def read_string(
         if not df.empty:
             cols = [c for c in ["queryItem", "stringId"] if c in df.columns]
             mappings.append(df[cols].drop_duplicates())
-
     mapping = pd.concat(mappings, ignore_index=True).dropna().drop_duplicates()
     mapping["queryItem"] = mapping["queryItem"].astype(str)
     mapping["stringId"] = mapping["stringId"].astype(str)
+    return mapping
 
-    string_to_ncbi = dict(zip(mapping["stringId"], mapping["queryItem"]))
-    mapped_ncbi = set(mapping["queryItem"])
 
+def get_edges(
+    mapped_ncbi: Set[int],
+    net_batch: int,
+    string_to_ncbi: Dict[str, int],
+    species: int,
+    caller: str,
+    url_net: str,
+    sleep_s: float,
+) -> pd.DataFrame:
+    """Get and construct the PPI network.
+
+    Args:
+        mapped_ncbi (Set[int]): Set of mapped NCBI Gene IDs.
+        net_batch (int): Network batch size.
+        string_to_ncbi (Dict[str, int]): Mapping of STRING protein
+            IDs to NCBI Gene IDs.
+        species (int): NCBI taxon ID.
+        caller (str): Identifier for API logging.
+        url_net (str): STRING API URL for network retrieval.
+        sleep_s (float): Delay between requests.
+
+    Returns:
+        pd.DataFrame: Undirected edge list with columns:
+            - GeneID_i (int)
+            - GeneID_j (int)
+            - Weight (float)
+    """
     ncbi_sorted = sorted(mapped_ncbi, key=lambda x: int(x))
     ncbi_blocks = list(_chunks(ncbi_sorted, net_batch))
     string_blocks = []
@@ -134,4 +149,46 @@ def read_string(
     edges = pd.concat(all_edge_frames, ignore_index=True)
     edges["GeneID_i"] = edges["GeneID_i"].astype(int)
     edges["GeneID_j"] = edges["GeneID_j"].astype(int)
+    return edges
+
+
+def read_string(
+    url_map: str,
+    url_net: str,
+    geneid: List[int],
+    caller: str = "user",
+    species: int = 9606,
+    map_batch: int = 1000,
+    net_batch: int = 1000,
+    sleep_s: float = 0.3,
+) -> pd.DataFrame:
+    """Construct a weighted gene-gene interaction network from STRING.
+
+    Maps NCBI Gene IDs to STRING protein IDs, retrieves interactions in batches,
+    and produces an undirected network with confidence scores.
+
+    Args:
+        url_map (str): STRING API URL for ID mapping.
+        url_net (str): STRING API URL for network retrieval.
+        geneid (List[int]): NCBI Gene IDs to include.
+        caller (str, optional): Identifier for API logging. Defaults to "user".
+        species (int, optional): NCBI taxon ID. Defaults to 9606 (human).
+        map_batch (int, optional): Mapping batch size. Defaults to 1000.
+        net_batch (int, optional): Network batch size. Defaults to 1000.
+        sleep_s (float, optional): Delay between requests. Defaults to 0.3.
+
+    Returns:
+        pd.DataFrame: Undirected edge list with columns:
+            - GeneID_i (int)
+            - GeneID_j (int)
+            - Weight (float)
+    """
+    mapping = get_mappings(geneid, map_batch, species, caller, url_map, sleep_s)
+
+    string_to_ncbi = dict(zip(mapping["stringId"], mapping["queryItem"]))
+    mapped_ncbi = set(mapping["queryItem"])
+
+    edges = get_edges(
+        mapped_ncbi, net_batch, string_to_ncbi, species, caller, url_net, sleep_s
+    )
     return edges
