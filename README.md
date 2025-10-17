@@ -2,7 +2,7 @@
 
 We will evaluate and implement the following improvements:
 
-* Enhance data utilization by leveraging ontology structures using tools such as [mOWL](https://github.com/bio-ontology-research-group/mowl) and knowledge graph embedding frameworks like [PyKEEN](https://github.com/pykeen/pykeen).
+* Enhance data utilization by leveraging ontology structures using tools such as [mOWL](https://github.com/bio-ontology-research-group/mowl), knowledge graph embedding frameworks like [PyKEEN](https://github.com/pykeen/pykeen) and [ProteinBert](https://github.com/nadavbra/protein_bert) for protein sequence data.
 * Extend beyond the current use of the STRING graph by incorporating additional curated data sources through tools such as [BioKG](https://github.com/dsi-bdi/biokg), which offers an elegant and integrated way to include more biological knowledge.
 
 
