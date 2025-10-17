@@ -1,1 +1,1 @@
-# use ProteinBert
+# use ProteinBERT
