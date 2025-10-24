@@ -13,14 +13,15 @@ from typing import Any, Dict, Union
 import pandas as pd  # for type hints and saving CSVs
 import yaml
 
+from genedatafactory.binary.disease.hpo import read_hpo
+from genedatafactory.binary.disease.mondo import read_mondo
+from genedatafactory.binary.gene.go import read_go
+from genedatafactory.binary.gene.reactome import read_reactome
+from genedatafactory.binary.gene.swissprot import read_swissprot
+from genedatafactory.embeddings.text import read_generifs_basic
 from genedatafactory.gene_disease.clinvar import read_clinvar
-from genedatafactory.disease.hpo import read_hpo
-from genedatafactory.disease.mondo import read_mondo
-from genedatafactory.gene.go import read_go
-from genedatafactory.gene.reactome import read_reactome
-from genedatafactory.gene.string_net import read_string
-from genedatafactory.gene.swissprot import read_swissprot
 from genedatafactory.gene_disease.omim import read_omim
+from genedatafactory.graph.string_net import read_string
 
 CONFIG: Dict[str, Any] = {}
 FILES = None
@@ -42,7 +43,6 @@ def download_with_retries(
     attempts: int = 4,
     backoff: float = 1.5,
     timeout: int = 60,
-    verify: Union[bool, Path, str, None] = True,
     proxies_from_env: bool = True,
 ) -> None:
     """Download a file with retry and SSL options.
@@ -56,24 +56,13 @@ def download_with_retries(
         attempts (int, optional): Maximum retry attempts. Defaults to 4.
         backoff (float, optional): Base for exponential backoff between retries. Defaults to 1.5.
         timeout (int, optional): Timeout per attempt in seconds. Defaults to 60.
-        verify (bool | Path | str | None, optional): SSL verification mode.
-            - True: Use certifi/system CA (default).
-            - False: Disable SSL verification.
-            - Path/str: Path to custom CA bundle.
         proxies_from_env (bool, optional): Use environment proxy settings. Defaults to True.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
 
     # Build SSL context
-    if verify is False:
-        ctx = ssl._create_unverified_context()
-    else:
-        ctx = ssl.create_default_context()
-        if isinstance(verify, (str, Path)):
-            ctx.load_verify_locations(cafile=str(verify))
-        elif verify is True and _CERTIFI:
-            ctx.load_verify_locations(cafile=_CERTIFI)
-        # else: use system CA store
+    ctx = ssl.create_default_context()
+    ctx.load_verify_locations(cafile=_CERTIFI)
 
     # Build opener
     handlers = []
@@ -82,7 +71,10 @@ def download_with_retries(
     handlers.append(urllib.request.HTTPSHandler(context=ctx))
     opener = urllib.request.build_opener(*handlers)
 
-    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    headers = {
+        "User-Agent": UA,
+    }
+    req = urllib.request.Request(url, headers=headers)
 
     for i in range(1, attempts + 1):
         try:
@@ -181,6 +173,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
         output_dir: Directory to save processed CSV files.
     """
     gd_path = input_dir / NAMES["OMIM"]
+    generifs_basic_path = input_dir / NAMES["GENE_RIFS"]
     go_path = input_dir / NAMES["GO"]
     gene2go_path = input_dir / NAMES["GO_2"]
     swissprot_path = input_dir / NAMES["SWISSPROT"]
@@ -196,40 +189,44 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     diseaseid = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
     geneid = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
 
-    # HPO
-    hpo = read_hpo(diseaseid)
-    report("HPO data", hpo, ["MIM number"])
-    save_df(hpo, "hpo", output_dir)
+    gene_rifs = read_generifs_basic(str(generifs_basic_path), geneid)
+    report("Gene RIFS data", gene_rifs, ["GeneID"])
+    save_df(gene_rifs, "gene_rifs", output_dir)
 
-    # GO
-    go = read_go(str(go_path), str(gene2go_path), geneid)
-    report("GO data", go, ["GeneID"])
-    save_df(go, "go", output_dir)
+    # # HPO
+    # hpo = read_hpo(diseaseid)
+    # report("HPO data", hpo, ["MIM number"])
+    # save_df(hpo, "hpo", output_dir)
 
-    # SwissProt
-    swissprot = read_swissprot(str(swissprot_path), geneid)
-    report("SWISS PROT data", swissprot, ["GeneID"])
-    save_df(swissprot, "swissprot", output_dir)
+    # # GO
+    # go = read_go(str(go_path), str(gene2go_path), geneid)
+    # report("GO data", go, ["GeneID"])
+    # save_df(go, "go", output_dir)
 
-    # Reactome
-    reactome = read_reactome(str(reactome_path), geneid)
-    report("Reactome data", reactome, ["GeneID"])
-    save_df(reactome, "reactome", output_dir)
+    # # SwissProt
+    # swissprot = read_swissprot(str(swissprot_path), geneid)
+    # report("SWISS PROT data", swissprot, ["GeneID"])
+    # save_df(swissprot, "swissprot", output_dir)
 
-    # Mondo
-    mondo = read_mondo(str(mondo_path), diseaseid)
-    report("Mondo data", mondo, ["MIM"])
-    save_df(mondo, "mondo", output_dir)
+    # # Reactome
+    # reactome = read_reactome(str(reactome_path), geneid)
+    # report("Reactome data", reactome, ["GeneID"])
+    # save_df(reactome, "reactome", output_dir)
 
-    # STRING
-    string = read_string(geneid=geneid, **STRING_KWARGS)
-    report("STRING data", string, ["GeneID_i"])
-    save_df(string, "string", output_dir)
+    # # Mondo
+    # mondo = read_mondo(str(mondo_path), diseaseid)
+    # report("Mondo data", mondo, ["MIM"])
+    # save_df(mondo, "mondo", output_dir)
 
-    # ClinVar variants
-    clinvar = read_clinvar(str(clinvar_path), diseaseid)
-    report("Clinvar data", clinvar, ["GeneID"])
-    save_df(clinvar, "clinvar", output_dir)
+    # # STRING
+    # string = read_string(geneid=geneid, **STRING_KWARGS)
+    # report("STRING data", string, ["GeneID_i"])
+    # save_df(string, "string", output_dir)
+
+    # # ClinVar variants
+    # clinvar = read_clinvar(str(clinvar_path), diseaseid)
+    # report("Clinvar data", clinvar, ["GeneID"])
+    # save_df(clinvar, "clinvar", output_dir)
 
 
 def parse_args() -> argparse.Namespace:

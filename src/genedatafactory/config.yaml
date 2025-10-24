@@ -3,6 +3,7 @@ user_agent: "Mozilla/5.0 (compatible; fetch-refs/1.0)"
 
 files:
   OMIM: "mim2gene_medgen"
+  GENE_RIFS: "generifs_basic.gz"
   GO: "go-basic.obo"
   GO_2: "gene2go.gz"
   SWISSPROT: "uniprot_sprot.dat.gz"
@@ -12,6 +13,7 @@ files:
 
 url:
   mim2gene_medgen: "https://ftp.ncbi.nih.gov/gene/DATA/mim2gene_medgen"
+  generifs_basic.gz: "https://ftp.ncbi.nlm.nih.gov/gene/GeneRIF/generifs_basic.gz"
   go-basic.obo: "https://current.geneontology.org/ontology/go-basic.obo"
   gene2go.gz: "https://ftp.ncbi.nih.gov/gene/DATA/gene2go.gz"
   uniprot_sprot.dat.gz: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.dat.gz"
