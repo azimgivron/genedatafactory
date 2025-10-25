@@ -63,7 +63,7 @@ genedatafactory -i ./data/raw -o ./data/processed
 ### 🧩 What it does
 
 1. Checks for required datasets (downloads missing files).
-2. Processes OMIM, GO, HPO, SwissProt, Reactome, Mondo, STRING, and ClinVar data.
+2. Processes OMIM, MEDGEN, RIFs, GO, HPO, SwissProt, Reactome, Mondo, STRING, and ClinVar data.
 3. Saves integrated and cleaned tables as CSV files in the output folder.
 
 ## 📦 Directory structure
