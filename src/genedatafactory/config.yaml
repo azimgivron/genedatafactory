@@ -10,6 +10,8 @@ files:
   REACTOME : "NCBI2Reactome_All_Levels.txt"
   CLINVAR: "variant_summary.txt.gz"
   MONDO: "mondo.obo"
+  MGDEF: "MGDEF.RRF.gz"
+  MGDEF_MAPPING: "MedGenIDMappings.txt.gz"
 
 url:
   mim2gene_medgen: "https://ftp.ncbi.nih.gov/gene/DATA/mim2gene_medgen"
@@ -20,6 +22,8 @@ url:
   NCBI2Reactome_All_Levels.txt: "https://reactome.org/download/current/NCBI2Reactome_All_Levels.txt"
   variant_summary.txt.gz: "https://ftp.ncbi.nlm.nih.gov/pub/clinvar/tab_delimited/variant_summary.txt.gz"
   mondo.obo: "https://purl.obolibrary.org/obo/mondo.obo"
+  MGDEF.RRF.gz: "https://ftp.ncbi.nlm.nih.gov/pub/medgen/MGDEF.RRF.gz"
+  MedGenIDMappings.txt.gz: "https://ftp.ncbi.nlm.nih.gov/pub/medgen/MedGenIDMappings.txt.gz"
 
 string_api:
   url_map: "https://string-db.org/api/tsv/get_string_ids"

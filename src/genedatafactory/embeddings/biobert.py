@@ -1,10 +1,11 @@
 from typing import List
 
 import torch
-from transformers import AutoModel, AutoTokenizer
 from tqdm import tqdm
+from transformers import AutoModel, AutoTokenizer
 
 MODEL_NAME = "dmis-lab/biobert-base-cased-v1.1"
+
 
 def _pick_device() -> str:
     """Prefer Apple Silicon GPU (MPS), then CUDA, else CPU.
@@ -17,6 +18,7 @@ def _pick_device() -> str:
     if torch.cuda.is_available():
         return "cuda"
     return "cpu"
+
 
 class BioBERTMeanEncoder:
     """Encodes biomedical text into dense vector embeddings using BioBERT.
@@ -75,7 +77,7 @@ class BioBERTMeanEncoder:
         """
         embs = []
         if self.device == "mps":
-            batch_size = 96   # Apple GPU handles larger batches well
+            batch_size = 96  # Apple GPU handles larger batches well
         elif self.device == "cuda":
             batch_size = 64
         else:

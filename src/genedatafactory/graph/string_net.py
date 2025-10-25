@@ -44,7 +44,7 @@ def _post_tsv(url: str, data: Dict, sleep_s: float = 0.3) -> pd.DataFrame:
 
 
 def get_mappings(
-    geneid: List[int],
+    gene_ids: List[int],
     map_batch: int,
     species: int,
     caller: str,
@@ -54,7 +54,7 @@ def get_mappings(
     """Maps NCBI Gene IDs to STRING protein IDs.
 
     Args:
-        geneid (List[int]): NCBI Gene IDs to include.
+        gene_ids (List[int]): NCBI Gene IDs to include.
         map_batch (int): Mapping batch size.
         species (int): NCBI taxon ID.
         caller (str): Identifier for API logging.
@@ -65,7 +65,7 @@ def get_mappings(
         pd.DataFrame: Mapping of NCBI Gene IDs to STRING protein IDs.
     """
     mappings = []
-    for batch in _chunks(geneid, map_batch):
+    for batch in _chunks(gene_ids, map_batch):
         params = {
             "species": species,
             "echo_query": 1,
@@ -155,7 +155,7 @@ def get_edges(
 def read_string(
     url_map: str,
     url_net: str,
-    geneid: List[int],
+    gene_ids: List[int],
     caller: str = "user",
     species: int = 9606,
     map_batch: int = 1000,
@@ -170,7 +170,7 @@ def read_string(
     Args:
         url_map (str): STRING API URL for ID mapping.
         url_net (str): STRING API URL for network retrieval.
-        geneid (List[int]): NCBI Gene IDs to include.
+        gene_ids (List[int]): NCBI Gene IDs to include.
         caller (str, optional): Identifier for API logging. Defaults to "user".
         species (int, optional): NCBI taxon ID. Defaults to 9606 (human).
         map_batch (int, optional): Mapping batch size. Defaults to 1000.
@@ -183,7 +183,7 @@ def read_string(
             - GeneID_j (int)
             - Weight (float)
     """
-    mapping = get_mappings(geneid, map_batch, species, caller, url_map, sleep_s)
+    mapping = get_mappings(gene_ids, map_batch, species, caller, url_map, sleep_s)
 
     string_to_ncbi = dict(zip(mapping["stringId"], mapping["queryItem"]))
     mapped_ncbi = set(mapping["queryItem"])

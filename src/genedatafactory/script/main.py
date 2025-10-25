@@ -18,7 +18,7 @@ from genedatafactory.binary.disease.mondo import read_mondo
 from genedatafactory.binary.gene.go import read_go
 from genedatafactory.binary.gene.reactome import read_reactome
 from genedatafactory.binary.gene.swissprot import read_swissprot
-from genedatafactory.embeddings.text import read_generifs_basic
+from genedatafactory.embeddings.text import read_generifs_basic, read_medgen_definitions
 from genedatafactory.gene_disease.clinvar import read_clinvar
 from genedatafactory.gene_disease.omim import read_omim
 from genedatafactory.graph.string_net import read_string
@@ -180,51 +180,53 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     reactome_path = input_dir / NAMES["REACTOME"]
     clinvar_path = input_dir / NAMES["CLINVAR"]
     mondo_path = input_dir / NAMES["MONDO"]
+    mgdef_path = input_dir / NAMES["MGDEF"]
+    mgdef_mapping_path = input_dir / NAMES["MGDEF_MAPPING"]
 
     # Gene–disease relationships
     gene_disease = read_omim(str(gd_path))
     report("Gene Disease data", gene_disease, ["GeneID", "MIM number"])
     save_df(gene_disease, "gene_disease", output_dir)
 
-    diseaseid = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
-    geneid = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
-
-    gene_rifs = read_generifs_basic(str(generifs_basic_path), geneid)
-    report("Gene RIFS data", gene_rifs, ["GeneID"])
-    save_df(gene_rifs, "gene_rifs", output_dir)
+    disease_ids = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
+    gene_ids = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
+    read_medgen_definitions(str(mgdef_path), str(mgdef_mapping_path), disease_ids)
+    # gene_rifs = read_generifs_basic(str(generifs_basic_path), gene_ids)
+    # report("Gene RIFS data", gene_rifs, ["GeneID"])
+    # save_df(gene_rifs, "gene_rifs", output_dir)
 
     # # HPO
-    # hpo = read_hpo(diseaseid)
+    # hpo = read_hpo(disease_ids)
     # report("HPO data", hpo, ["MIM number"])
     # save_df(hpo, "hpo", output_dir)
 
     # # GO
-    # go = read_go(str(go_path), str(gene2go_path), geneid)
+    # go = read_go(str(go_path), str(gene2go_path), gene_ids)
     # report("GO data", go, ["GeneID"])
     # save_df(go, "go", output_dir)
 
     # # SwissProt
-    # swissprot = read_swissprot(str(swissprot_path), geneid)
+    # swissprot = read_swissprot(str(swissprot_path), gene_ids)
     # report("SWISS PROT data", swissprot, ["GeneID"])
     # save_df(swissprot, "swissprot", output_dir)
 
     # # Reactome
-    # reactome = read_reactome(str(reactome_path), geneid)
+    # reactome = read_reactome(str(reactome_path), gene_ids)
     # report("Reactome data", reactome, ["GeneID"])
     # save_df(reactome, "reactome", output_dir)
 
     # # Mondo
-    # mondo = read_mondo(str(mondo_path), diseaseid)
+    # mondo = read_mondo(str(mondo_path), disease_ids)
     # report("Mondo data", mondo, ["MIM"])
     # save_df(mondo, "mondo", output_dir)
 
     # # STRING
-    # string = read_string(geneid=geneid, **STRING_KWARGS)
+    # string = read_string(gene_ids=gene_ids, **STRING_KWARGS)
     # report("STRING data", string, ["GeneID_i"])
     # save_df(string, "string", output_dir)
 
     # # ClinVar variants
-    # clinvar = read_clinvar(str(clinvar_path), diseaseid)
+    # clinvar = read_clinvar(str(clinvar_path), disease_ids)
     # report("Clinvar data", clinvar, ["GeneID"])
     # save_df(clinvar, "clinvar", output_dir)
 

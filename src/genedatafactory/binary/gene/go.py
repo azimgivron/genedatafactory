@@ -118,7 +118,7 @@ def _gene_to_col_indices_worker(gene: int, terms: set[str]) -> tuple[int, np.nda
 
 def make_feature_vector(
     go_obo_path,
-    geneid: List[int],
+    gene_ids: List[int],
     gene2go_df: pd.DataFrame,
     vocab: List[str],
 ) -> pd.DataFrame:
@@ -126,7 +126,7 @@ def make_feature_vector(
 
     Args:
         go_obo_path (str): Path to GO OBO file.
-        geneid (List[int]): List of NCBI GeneIDs (rows).
+        gene_ids (List[int]): List of NCBI GeneIDs (rows).
         gene2go_df (pd.DataFrame): DataFrame containing 'GeneID' and 'GO_ID' columns.
         vocab (List[str]): List of GO terms (columns).
 
@@ -137,14 +137,14 @@ def make_feature_vector(
     term_index: Dict[str, int] = {t: j for j, t in enumerate(vocab)}
 
     # Group direct GO terms per requested gene
-    df = gene2go_df[gene2go_df["GeneID"].isin(geneid)]
+    df = gene2go_df[gene2go_df["GeneID"].isin(gene_ids)]
 
     grouped: Dict[int, Set[str]] = (
         df.groupby("GeneID")["GO_ID"].apply(lambda s: set(s.dropna())).to_dict()
     )
 
     # Ensure every requested gene appears (possibly with empty set)
-    for g in geneid:
+    for g in gene_ids:
         grouped.setdefault(g, set())
 
     # Run workers
@@ -153,7 +153,7 @@ def make_feature_vector(
         initializer=_init_worker, initargs=(go_obo_path, term_index)
     ) as ex:
         futures = [
-            ex.submit(_gene_to_col_indices_worker, g, grouped[g]) for g in geneid
+            ex.submit(_gene_to_col_indices_worker, g, grouped[g]) for g in gene_ids
         ]
         for fut in as_completed(futures):
             g, cols = fut.result()
@@ -162,13 +162,13 @@ def make_feature_vector(
     return sparse_df
 
 
-def read_go(GO_path: str, gene2GO_path: str, geneid: List[int]) -> pd.DataFrame:
+def read_go(GO_path: str, gene2GO_path: str, gene_ids: List[int]) -> pd.DataFrame:
     """Generate a GO feature matrix for a set of genes.
 
     Args:
         GO_path (str): Path to GO OBO file.
         gene2GO_path (str): Path to NCBI gene2go.gz file.
-        geneid (List[int]): List of target NCBI GeneIDs.
+        gene_ids (List[int]): List of target NCBI GeneIDs.
 
     Returns:
         pd.DataFrame: Sparse gene-GO mapping DataFrame.
@@ -177,7 +177,7 @@ def read_go(GO_path: str, gene2GO_path: str, geneid: List[int]) -> pd.DataFrame:
     vocab = sorted(gene2go["GO_ID"].unique())
     return make_feature_vector(
         GO_path,
-        geneid=geneid,
+        gene_ids=gene_ids,
         gene2go_df=gene2go,
         vocab=vocab,
     )
