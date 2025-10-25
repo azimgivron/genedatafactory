@@ -3,12 +3,12 @@ from typing import List
 import pandas as pd
 
 
-def read_reactome(path: str, geneid: List[int]) -> pd.DataFrame:
+def read_reactome(path: str, gene_ids: List[int]) -> pd.DataFrame:
     """Read and filter Reactome NCBI2Reactome mapping file.
 
     Args:
         path (str): Path to the Reactome mapping file (e.g., 'NCBI2Reactome.txt').
-        geneid (List[int]): List of NCBI Gene IDs to retain.
+        gene_ids (List[int]): List of NCBI Gene IDs to retain.
 
     Returns:
         pd.DataFrame: Filtered DataFrame containing curated Homo sapiens
@@ -34,7 +34,7 @@ def read_reactome(path: str, geneid: List[int]) -> pd.DataFrame:
     df_curated = df[
         (df["Species"] == "Homo sapiens")
         & (df["Evidence"].isin(curated_codes))
-        & (df["GeneID"].isin(pd.Series(geneid).astype(str)))
+        & (df["GeneID"].isin(pd.Series(gene_ids).astype(str)))
     ].dropna()
 
     df_curated["GeneID"] = pd.to_numeric(

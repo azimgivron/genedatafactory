@@ -50,7 +50,7 @@ def map_cat(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
+def read_clinvar(path: str, disease_ids: List[int]) -> pd.DataFrame:
     """Load ClinVar variant summary and build filtered MIM-MIM edge list.
 
     Reads ClinVar's variant_summary.txt.gz, extracts OMIM identifiers,
@@ -59,7 +59,7 @@ def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
 
     Args:
         path: Path to ClinVar variant_summary.txt.gz.
-        diseaseid: List of OMIM integer IDs to filter by.
+        disease_ids: List of OMIM integer IDs to filter by.
 
     Returns:
         DataFrame with columns ['GeneID', 'MIM', 'ClinicalSignificance'].
@@ -126,5 +126,5 @@ def read_clinvar(path: str, diseaseid: List[int]) -> pd.DataFrame:
     df = map_cat(df)
     df = extract_mim_numbers(df)
     df = df.explode("MIM", ignore_index=True)
-    df = df[df["MIM"].isin(diseaseid)].reset_index(drop=True)
+    df = df[df["MIM"].isin(disease_ids)].reset_index(drop=True)
     return df
