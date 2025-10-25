@@ -191,6 +191,7 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     disease_ids = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
     gene_ids = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
     
+    # MEDGEN
     medgen = read_medgen_definitions(str(mgdef_path), str(mgdef_mapping_path), disease_ids)
     report("Disease MEDGEN text data", medgen, ["MIM number"])
     save_df(medgen, "medgen", output_dir)
