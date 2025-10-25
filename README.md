@@ -140,7 +140,7 @@ By harmonizing these sources, `genedatafactory` enables the creation of **compre
 
 ## 🧠 Output Files
 
-All datasets are stored in a **sparse format**, meaning that only entries with non-zero values are explicitly listed. If a value column is not present, the corresponding entries are implicitly assigned a value of **1**. The overall number of genes and diseases is determined by the count of unique identifiers found in the `gene_disease.csv` file.
+All datasets except the text embeddings are stored in a **sparse format**, meaning that only entries with non-zero values are explicitly listed. If a value column is not present, the corresponding entries are implicitly assigned a value of **1**. The overall number of genes and diseases is determined by the count of unique identifiers found in the `gene_disease.csv` file. The embeddings are generated with BioBERT. If the number of tokens in the text based representation exceed the maximal capacity of the model, average pooling is used to aggregate the different embeddings. 
 
 ### 🧩 **Generated Datasets**
 
@@ -162,7 +162,7 @@ All datasets are stored in a **sparse format**, meaning that only entries with n
 
 * **Feature matrices (HPO, GO, SwissProt, Reactome, Mondo, GENE_RIF Embeddings, MedGen Embeddings)**
   → Represent diseases or genes in a **vectorized format** suitable for machine learning and graph-based models.
-  Each column corresponds to a controlled vocabulary term or ontology concept.
+  Each column corresponds to a controlled vocabulary term, embdedding dimension or ontology concept.
 
 * **Graphs (STRING, ClinVar)**
   → Represent **relational structures** between genes and diseases, forming the backbone for graph-based learning tasks in gene prioritization.
