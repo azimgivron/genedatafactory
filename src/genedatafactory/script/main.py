@@ -190,45 +190,50 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
 
     disease_ids = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
     gene_ids = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
-    read_medgen_definitions(str(mgdef_path), str(mgdef_mapping_path), disease_ids)
-    # gene_rifs = read_generifs_basic(str(generifs_basic_path), gene_ids)
-    # report("Gene RIFS data", gene_rifs, ["GeneID"])
-    # save_df(gene_rifs, "gene_rifs", output_dir)
+    
+    medgen = read_medgen_definitions(str(mgdef_path), str(mgdef_mapping_path), disease_ids)
+    report("Disease MEDGEN text data", medgen, ["MIM number"])
+    save_df(medgen, "medgen", output_dir)
 
-    # # HPO
-    # hpo = read_hpo(disease_ids)
-    # report("HPO data", hpo, ["MIM number"])
-    # save_df(hpo, "hpo", output_dir)
+    # RIFS
+    gene_rifs = read_generifs_basic(str(generifs_basic_path), gene_ids)
+    report("Gene RIFS data", gene_rifs, ["GeneID"])
+    save_df(gene_rifs, "gene_rifs", output_dir)
 
-    # # GO
-    # go = read_go(str(go_path), str(gene2go_path), gene_ids)
-    # report("GO data", go, ["GeneID"])
-    # save_df(go, "go", output_dir)
+    # HPO
+    hpo = read_hpo(disease_ids)
+    report("HPO data", hpo, ["MIM number"])
+    save_df(hpo, "hpo", output_dir)
 
-    # # SwissProt
-    # swissprot = read_swissprot(str(swissprot_path), gene_ids)
-    # report("SWISS PROT data", swissprot, ["GeneID"])
-    # save_df(swissprot, "swissprot", output_dir)
+    # GO
+    go = read_go(str(go_path), str(gene2go_path), gene_ids)
+    report("GO data", go, ["GeneID"])
+    save_df(go, "go", output_dir)
 
-    # # Reactome
-    # reactome = read_reactome(str(reactome_path), gene_ids)
-    # report("Reactome data", reactome, ["GeneID"])
-    # save_df(reactome, "reactome", output_dir)
+    # SwissProt
+    swissprot = read_swissprot(str(swissprot_path), gene_ids)
+    report("SWISS PROT data", swissprot, ["GeneID"])
+    save_df(swissprot, "swissprot", output_dir)
 
-    # # Mondo
-    # mondo = read_mondo(str(mondo_path), disease_ids)
-    # report("Mondo data", mondo, ["MIM"])
-    # save_df(mondo, "mondo", output_dir)
+    # Reactome
+    reactome = read_reactome(str(reactome_path), gene_ids)
+    report("Reactome data", reactome, ["GeneID"])
+    save_df(reactome, "reactome", output_dir)
 
-    # # STRING
-    # string = read_string(gene_ids=gene_ids, **STRING_KWARGS)
-    # report("STRING data", string, ["GeneID_i"])
-    # save_df(string, "string", output_dir)
+    # Mondo
+    mondo = read_mondo(str(mondo_path), disease_ids)
+    report("Mondo data", mondo, ["MIM"])
+    save_df(mondo, "mondo", output_dir)
 
-    # # ClinVar variants
-    # clinvar = read_clinvar(str(clinvar_path), disease_ids)
-    # report("Clinvar data", clinvar, ["GeneID"])
-    # save_df(clinvar, "clinvar", output_dir)
+    # STRING
+    string = read_string(gene_ids=gene_ids, **STRING_KWARGS)
+    report("STRING data", string, ["GeneID_i"])
+    save_df(string, "string", output_dir)
+
+    # ClinVar variants
+    clinvar = read_clinvar(str(clinvar_path), disease_ids)
+    report("Clinvar data", clinvar, ["GeneID"])
+    save_df(clinvar, "clinvar", output_dir)
 
 
 def parse_args() -> argparse.Namespace:

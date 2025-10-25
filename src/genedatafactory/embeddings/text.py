@@ -178,6 +178,6 @@ def read_medgen_definitions(
         .reset_index(name="description")
     )
     df["description"] = df["description"].apply(prepare_text)
-    embeded = embed(df, "MIM nnumber")
+    embeded = embed(df, "MIM number")
 
     return embeded
