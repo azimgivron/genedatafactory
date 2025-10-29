@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, List
 
 import pandas as pd  # for type hints and saving CSVs
 import yaml
@@ -18,10 +18,12 @@ from genedatafactory.binary.disease.mondo import read_mondo
 from genedatafactory.binary.gene.go import read_go
 from genedatafactory.binary.gene.reactome import read_reactome
 from genedatafactory.binary.gene.swissprot import read_swissprot
-from genedatafactory.embeddings.text import read_generifs_basic, read_medgen_definitions
+from genedatafactory.embeddings.text import (read_generifs_basic,
+                                             read_medgen_definitions)
 from genedatafactory.gene_disease.clinvar import read_clinvar
 from genedatafactory.gene_disease.omim import read_omim
 from genedatafactory.graph.string_net import read_string
+from genedatafactory.script.utils import count, new_mapping
 
 CONFIG: Dict[str, Any] = {}
 FILES = None
@@ -105,7 +107,7 @@ def ensure_files(target_dir: Path) -> None:
     """Ensure all required reference files exist in the input directory.
 
     Args:
-        target_dir: Directory to store or download raw files.
+        target_dir (Path): Directory to store or download raw files.
     """
     target_dir.mkdir(parents=True, exist_ok=True)
     for fname, url in FILES.items():
@@ -134,13 +136,13 @@ def ensure_files(target_dir: Path) -> None:
             print(f"❌ Failed to download {fname}: {e}", file=sys.stderr)
 
 
-def report(step: str, df: "pd.DataFrame", by_columns: list[str] | None = None) -> None:
+def report(step: str, df: "pd.DataFrame", by_columns: List[str] | None = None) -> None:
     """Print summary statistics of a DataFrame.
 
     Args:
-        step: Name of the processing step.
-        df: DataFrame to summarize.
-        by_columns: Columns for which to count unique values.
+        step (str): Name of the processing step.
+        df (pd.DataFrame): DataFrame to summarize.
+        by_columns (List[str], optional): Columns for which to count unique values.
     """
     if by_columns is None:
         by_columns = []
@@ -155,9 +157,9 @@ def save_df(df: pd.DataFrame, name: str, output_dir: Path) -> None:
     """Save a DataFrame to CSV in the output directory.
 
     Args:
-        df: DataFrame to save.
-        name: Base name of the CSV file.
-        output_dir: Directory to write the file.
+        df (pd.DataFrame): DataFrame to save.
+        name (str): Base name of the CSV file.
+        output_dir (Path): Directory to write the file.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     out_path = output_dir / f"{name}.csv"
@@ -165,12 +167,16 @@ def save_df(df: pd.DataFrame, name: str, output_dir: Path) -> None:
     print(f"📦 Saved {name}.csv ({out_path.stat().st_size / 1e6:.2f} MB)")
 
 
-def process_files(input_dir: Path, output_dir: Path) -> None:
+def process_files(
+    input_dir: Path, output_dir: Path, filter_for_omim: bool = False
+) -> None:
     """Process all data sources and export cleaned datasets to CSV.
 
     Args:
-        input_dir: Directory containing raw files.
-        output_dir: Directory to save processed CSV files.
+        input_dir (str): Directory containing raw files.
+        output_dir (str): Directory to save processed CSV files.
+        filter_for_omim (bool): Whether to keep fully described
+            genes and diseases only in OMIM dataset.
     """
     gd_path = input_dir / NAMES["OMIM"]
     generifs_basic_path = input_dir / NAMES["GENE_RIFS"]
@@ -183,47 +189,52 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
     mgdef_path = input_dir / NAMES["MGDEF"]
     mgdef_mapping_path = input_dir / NAMES["MGDEF_MAPPING"]
 
-    # Gene–disease relationships
+    gene_key = "GeneID"
+    disease_key = "MIM number"
+
+    # OMIM relationships
     gene_disease = read_omim(str(gd_path))
-    report("Gene Disease data", gene_disease, ["GeneID", "MIM number"])
+    report("Gene Disease data", gene_disease, [gene_key, disease_key])
     save_df(gene_disease, "gene_disease", output_dir)
 
-    disease_ids = gene_disease["MIM number"].drop_duplicates().astype("int32").tolist()
-    gene_ids = gene_disease["GeneID"].drop_duplicates().astype("int32").tolist()
-    
+    disease_ids = gene_disease[disease_key].drop_duplicates().astype("int32").tolist()
+    gene_ids = gene_disease[gene_key].drop_duplicates().astype("int32").tolist()
+
     # MEDGEN
-    medgen = read_medgen_definitions(str(mgdef_path), str(mgdef_mapping_path), disease_ids)
-    report("Disease MEDGEN text data", medgen, ["MIM number"])
+    medgen = read_medgen_definitions(
+        str(mgdef_path), str(mgdef_mapping_path), disease_ids
+    )
+    report("Disease MEDGEN text data", medgen, [disease_key])
     save_df(medgen, "medgen", output_dir)
 
     # RIFS
     gene_rifs = read_generifs_basic(str(generifs_basic_path), gene_ids)
-    report("Gene RIFS data", gene_rifs, ["GeneID"])
+    report("Gene RIFS data", gene_rifs, [gene_key])
     save_df(gene_rifs, "gene_rifs", output_dir)
 
     # HPO
     hpo = read_hpo(disease_ids)
-    report("HPO data", hpo, ["MIM number"])
+    report("HPO data", hpo, [disease_key])
     save_df(hpo, "hpo", output_dir)
 
     # GO
     go = read_go(str(go_path), str(gene2go_path), gene_ids)
-    report("GO data", go, ["GeneID"])
+    report("GO data", go, [gene_key])
     save_df(go, "go", output_dir)
 
     # SwissProt
     swissprot = read_swissprot(str(swissprot_path), gene_ids)
-    report("SWISS PROT data", swissprot, ["GeneID"])
+    report("SWISS PROT data", swissprot, [gene_key])
     save_df(swissprot, "swissprot", output_dir)
 
     # Reactome
     reactome = read_reactome(str(reactome_path), gene_ids)
-    report("Reactome data", reactome, ["GeneID"])
+    report("Reactome data", reactome, [gene_key])
     save_df(reactome, "reactome", output_dir)
 
     # Mondo
     mondo = read_mondo(str(mondo_path), disease_ids)
-    report("Mondo data", mondo, ["MIM"])
+    report("Mondo data", mondo, [disease_key])
     save_df(mondo, "mondo", output_dir)
 
     # STRING
@@ -233,8 +244,75 @@ def process_files(input_dir: Path, output_dir: Path) -> None:
 
     # ClinVar variants
     clinvar = read_clinvar(str(clinvar_path), disease_ids)
-    report("Clinvar data", clinvar, ["GeneID"])
+    report("Clinvar data", clinvar, [gene_key])
     save_df(clinvar, "clinvar", output_dir)
+
+    if filter_for_omim:
+        print(
+            "Filtering: Keep fully characterized genes and diseases (no missing feature)"
+        )
+        genes, diseases = count(
+            gene_disease,
+            others=[
+                gene_rifs,
+                go,
+                swissprot,
+                reactome,
+                medgen,
+                hpo,
+                mondo,
+            ],
+        )
+
+        mask = (gene_disease[gene_key].isin(genes)) & (
+            gene_disease[disease_key].isin(diseases)
+        )
+        gene_disease = gene_disease[mask]
+        gene_mapping = {int(old_id): new_id for new_id, old_id in enumerate(genes)}
+        disease_mapping = {
+            int(old_id): new_id for new_id, old_id in enumerate(diseases)
+        }
+        gene_disease = new_mapping(gene_disease, gene_key, gene_mapping)
+        gene_disease = new_mapping(gene_disease, disease_key, disease_mapping)
+        report("Gene Disease data", gene_disease, [gene_key, disease_key])
+        save_df(gene_disease, "gene_disease", output_dir)
+
+        gene_rifs = gene_rifs[gene_rifs[gene_key].isin(genes)]
+        gene_rifs = new_mapping(gene_rifs, gene_key, gene_mapping)
+        report("Gene RIFS data", gene_rifs, [gene_key])
+        save_df(gene_rifs, "gene_rifs", output_dir)
+
+        go = go[go[gene_key].isin(genes)]
+        go = new_mapping(go, gene_key, gene_mapping)
+        report("GO data", go, [gene_key])
+        save_df(go, "go", output_dir)
+
+        swissprot = swissprot[swissprot[gene_key].isin(genes)]
+        swissprot = new_mapping(swissprot, gene_key, gene_mapping)
+        report("SWISS PROT data", swissprot, [gene_key])
+        save_df(swissprot, "swissprot", output_dir)
+
+        reactome = reactome[reactome[gene_key].isin(genes)]
+        reactome = new_mapping(reactome, gene_key, gene_mapping)
+        report("Reactome data", reactome, [gene_key])
+        save_df(reactome, "reactome", output_dir)
+
+        medgen = medgen[medgen[disease_key].isin(diseases)]
+        medgen = new_mapping(medgen, disease_key, disease_mapping)
+        report("Disease MEDGEN text data", medgen, [disease_key])
+        save_df(medgen, "medgen", output_dir)
+
+        hpo = hpo[hpo[disease_key].isin(diseases)]
+        hpo = new_mapping(hpo, disease_key, disease_mapping)
+        report("HPO data", hpo, [disease_key])
+        save_df(hpo, "hpo", output_dir)
+
+        mondo = mondo[mondo[disease_key].isin(diseases)]
+        mondo = new_mapping(mondo, disease_key, disease_mapping)
+        report("Mondo data", mondo, [disease_key])
+        save_df(mondo, "mondo", output_dir)
+
+        # handle string
 
 
 def parse_args() -> argparse.Namespace:

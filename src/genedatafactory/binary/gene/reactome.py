@@ -41,5 +41,9 @@ def read_reactome(path: str, gene_ids: List[int]) -> pd.DataFrame:
         df_curated["GeneID"], downcast="integer", errors="coerce"
     )
     df_curated = df_curated.dropna()
+    mapping = {
+        t: i for i, t in enumerate(df_curated["PathwayID"].drop_duplicates().to_list())
+    }
+    df_curated["PathwayID"] = df_curated["PathwayID"].map(lambda x: mapping[x])
 
-    return df_curated
+    return df_curated[["GeneID", "PathwayID"]]

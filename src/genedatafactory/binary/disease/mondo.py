@@ -75,9 +75,9 @@ def mondo_binary_vector(
                 for anc in ancestors_inclusive(mid):
                     j = term_index.get(anc)
                     if j is not None:
-                        data.append((mim, anc))
+                        data.append((mim, j))
 
-    return pd.DataFrame(data, columns=["MIM", "TermID"])
+    return pd.DataFrame(data, columns=["MIM number", "TermID"])
 
 
 def read_mondo(path: str, disease_ids: List[str]) -> pd.DataFrame:

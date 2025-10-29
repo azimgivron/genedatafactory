@@ -38,4 +38,4 @@ def read_omim(path: str) -> pd.DataFrame:
     ]
     df["GeneID"] = df["GeneID"].astype("int32")
 
-    return df
+    return df[["GeneID", "MIM number"]]
