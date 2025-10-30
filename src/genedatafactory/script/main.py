@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Set
 
 import numpy as np
-import pandas as pd  # for type hints and saving CSVs
+import pandas as pd
 import yaml
 
 from genedatafactory.binary.disease.hpo import read_hpo
