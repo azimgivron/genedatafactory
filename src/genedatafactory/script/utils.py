@@ -1,7 +1,8 @@
 from typing import Dict, List, Set, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 
 def count(
     main_df: pd.DataFrame,
@@ -20,14 +21,14 @@ def count(
     Returns:
         Tuple[Set[int], Set[int]]: Intersected sets of gene IDs and disease IDs.
     """
-    genes = set(main_df[gene_key])
-    diseases = set(main_df[disease_key])
+    genes = set(main_df[gene_key].astype("int32"))
+    diseases = set(main_df[disease_key].astype("int32"))
 
     for df in others:
         if gene_key in df.columns:
-            genes &= set(df[gene_key].astype(int))
+            genes = genes.intersection(set(df[gene_key].astype("int32")))
         elif disease_key in df.columns:
-            diseases &= set(df[disease_key].astype(int))
+            diseases = diseases.intersection(set(df[disease_key].astype("int32")))
 
     return genes, diseases
 
@@ -59,6 +60,8 @@ def remap(df: pd.DataFrame, idx: int) -> pd.DataFrame:
         pd.DataFrame: DataFrame with the specified column remapped to consecutive integers.
     """
     index_set = set(df.iloc[:, idx].astype("int32"))
-    mapping = {np.int32(old_id): np.int32(new_id) for new_id, old_id in enumerate(index_set)}
+    mapping = {
+        np.int32(old_id): np.int32(new_id) for new_id, old_id in enumerate(index_set)
+    }
     df.iloc[:, idx] = df.iloc[:, idx].map(lambda x: mapping[x])
     return df

@@ -32,7 +32,8 @@ def read_omim(path: str) -> pd.DataFrame:
         },
     )
 
-    # Filter to phenotype entries with valid GeneIDs and no comment
+    # Filter to phenotype entries with valid GeneIDs and
+    # remove non-disease, susceptibility, question and QTL, so keep confirmed
     df = df[
         (df["type"] == "phenotype") & (df["GeneID"] != "-") & (df["Comment"] == "-")
     ]

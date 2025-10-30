@@ -1,9 +1,9 @@
+import os
 from typing import List
 
 import nltk
 import numpy as np
 import pandas as pd
-import os
 
 from genedatafactory.embeddings.biobert import BioBERTMeanEncoder
 
@@ -12,6 +12,7 @@ nltk.download("punkt", quiet=True)
 nltk.download("punkt_tab", quiet=True)
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 
 def prepare_text(description: str) -> str:
     """Normalize, sentence-split, and deduplicate a gene description.

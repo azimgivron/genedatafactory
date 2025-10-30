@@ -263,6 +263,9 @@ def process_files(
             gene_disease[disease_key].isin(diseases)
         )
         gene_disease = gene_disease[mask]
+        genes = set(gene_disease[gene_key])
+        diseases = set(gene_disease[disease_key])
+
         gene_mapping = {
             np.int32(old_id): np.int32(new_id) for new_id, old_id in enumerate(genes)
         }
