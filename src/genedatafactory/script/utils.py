@@ -9,16 +9,16 @@ def count(
     gene_key: str = "GeneID",
     disease_key: str = "MIM number",
 ) -> Tuple[Set[int], Set[int]]:
-    """_summary_
+    """Compute intersecting gene and disease identifiers across multiple DataFrames.
 
     Args:
-        main_df (pd.DataFrame): _description_
-        others (List[pd.DataFrame]): _description_
-        gene_key (str, optional): _description_. Defaults to "GeneID".
-        disease_key (str, optional): _description_. Defaults to "MIM number".
+        main_df (pd.DataFrame): Main DataFrame containing gene-disease associations.
+        others (List[pd.DataFrame]): Other DataFrames to intersect with `main_df`.
+        gene_key (str, optional): Column name for gene identifiers. Defaults to "GeneID".
+        disease_key (str, optional): Column name for disease identifiers. Defaults to "MIM number".
 
     Returns:
-        Tuple[Set[int], Set[int]]: _description_
+        Tuple[Set[int], Set[int]]: Intersected sets of gene IDs and disease IDs.
     """
     genes = set(main_df[gene_key])
     diseases = set(main_df[disease_key])
@@ -33,32 +33,32 @@ def count(
 
 
 def new_mapping(df: pd.DataFrame, key: str, mapping: Dict[int, int]) -> pd.DataFrame:
-    """_summary_
+    """Replace identifiers in a DataFrame column using a provided mapping.
 
     Args:
-        df (pd.DataFrame): _description_
-        key (str): _description_
-        mapping (Dict[int, int]): _description_
+        df (pd.DataFrame): Input DataFrame.
+        key (str): Column name whose values will be remapped.
+        mapping (Dict[int, int]): Dictionary mapping old IDs to new integer indices.
 
     Returns:
-        pd.DataFrame: _description_
+        pd.DataFrame: DataFrame with updated identifiers in the specified column.
     """
-    df.loc[:, key] = df[key].astype(int)
+    df.loc[:, key] = df[key].astype("int32")
     df.loc[:, key] = df[key].map(lambda x: mapping[x])
     return df
 
 
-def remap(df: pd.DataFrame, key: str) -> pd.DataFrame:
-    """_summary_
+def remap(df: pd.DataFrame, idx: int) -> pd.DataFrame:
+    """Reindex a numeric column by assigning new consecutive integer IDs.
 
     Args:
-        df (pd.DataFrame): _description_
-        key (str): _description_
+        df (pd.DataFrame): Input DataFrame.
+        idx (int): Index position of the column to reindex.
 
     Returns:
-        pd.DataFrame: _description_
+        pd.DataFrame: DataFrame with the specified column remapped to consecutive integers.
     """
-    index_set = set(df[key].astype(int))
+    index_set = set(df.iloc[:, idx].astype("int32"))
     mapping = {int(old_id): new_id for new_id, old_id in enumerate(index_set)}
-    df.loc[:, key] = df[key].map(lambda x: mapping[x])
+    df.iloc[:, idx] = df.iloc[:, idx].map(lambda x: mapping[x])
     return df

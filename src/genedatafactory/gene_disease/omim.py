@@ -36,6 +36,7 @@ def read_omim(path: str) -> pd.DataFrame:
     df = df[
         (df["type"] == "phenotype") & (df["GeneID"] != "-") & (df["Comment"] == "-")
     ]
+    df = df[["GeneID", "MIM number"]]
+    df["MIM number"] = df["MIM number"].astype("int32")
     df["GeneID"] = df["GeneID"].astype("int32")
-
-    return df[["GeneID", "MIM number"]]
+    return df

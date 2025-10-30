@@ -15,7 +15,7 @@ def extract_mim_numbers(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with an added 'MIM' column (list of integer OMIM IDs).
     """
     df = df.copy()
-    df["MIM"] = df["PhenotypeIDS"].apply(
+    df["MIM number"] = df["PhenotypeIDS"].apply(
         lambda s: (
             [int(m) for m in re.findall(r"OMIM:(\d+)", str(s))] if pd.notna(s) else []
         )
@@ -125,6 +125,6 @@ def read_clinvar(path: str, disease_ids: List[int]) -> pd.DataFrame:
 
     df = map_cat(df)
     df = extract_mim_numbers(df)
-    df = df.explode("MIM", ignore_index=True)
-    df = df[df["MIM"].isin(disease_ids)].reset_index(drop=True)
-    return df
+    df = df.explode("MIM number", ignore_index=True)
+    df = df[df["MIM number"].isin(disease_ids)].reset_index(drop=True)
+    return df[["GeneID", "MIM number", "ClinicalSignificance"]]

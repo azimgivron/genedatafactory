@@ -158,7 +158,7 @@ def make_feature_vector(
         for fut in as_completed(futures):
             g, cols = fut.result()
             data.extend([[g, voc_id] for voc_id in cols])
-    sparse_df = pd.DataFrame(data, columns=["GeneID", "VocabIndex"])
+    sparse_df = pd.DataFrame(data, columns=["GeneID", "TermID"])
     return sparse_df
 
 
