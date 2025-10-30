@@ -250,6 +250,8 @@ def process_files(
         others.append(string_genes)
     if "clinvar" in sources:
         clinvar = read_clinvar(str(clinvar_path), disease_ids)
+        clinvar = remap(clinvar, 0)
+        clinvar = remap(clinvar, 1)
 
     if filter:
         print(

@@ -1,7 +1,7 @@
 from typing import Dict, List, Set, Tuple
 
 import pandas as pd
-
+import numpy as np
 
 def count(
     main_df: pd.DataFrame,
@@ -59,6 +59,6 @@ def remap(df: pd.DataFrame, idx: int) -> pd.DataFrame:
         pd.DataFrame: DataFrame with the specified column remapped to consecutive integers.
     """
     index_set = set(df.iloc[:, idx].astype("int32"))
-    mapping = {int(old_id): new_id for new_id, old_id in enumerate(index_set)}
+    mapping = {np.int32(old_id): np.int32(new_id) for new_id, old_id in enumerate(index_set)}
     df.iloc[:, idx] = df.iloc[:, idx].map(lambda x: mapping[x])
     return df

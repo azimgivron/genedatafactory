@@ -11,6 +11,7 @@ from __future__ import annotations
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List, Set
 
+import logging
 import numpy as np
 import pandas as pd
 from goatools.obo_parser import GODag
@@ -78,6 +79,7 @@ def _init_worker(go_obo_path: str, term_index: dict[str, int]):
         term_index (dict[str, int]): Mapping from GO term to column index.
     """
     global _GO_DAG, _TERM_INDEX
+    logging.getLogger("goatools.obo_parser").setLevel(logging.ERROR)
     _GO_DAG = GODag(go_obo_path, optional_attrs={"relationship"})
     _TERM_INDEX = term_index
 
