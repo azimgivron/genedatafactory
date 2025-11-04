@@ -43,15 +43,21 @@ def embed(df: pd.DataFrame, key: str) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with the identifier column and embedding features:
             - key: Identifier from the input DataFrame.
-            - embedding_0 ... embedding_767: Float vector components.
+            - "EmbeddingID" (int)
+            - "Value" (float)
     """
     encoder = BioBERTMeanEncoder()
     embeddings = encoder.encode(df["description"].tolist())
     emb_array = embeddings.detach().cpu().numpy().astype(np.float32)
-    emb_cols = [f"embedding_{i}" for i in range(emb_array.shape[1])]  # 0..767
-    emb_df = pd.DataFrame(emb_array, columns=emb_cols)
-    df_out = pd.concat([df[[key]].reset_index(drop=True), emb_df], axis=1)
-    return df_out
+    # Build long-format DataFrame
+    n_samples, n_dims = emb_array.shape
+    data = {
+        key: np.repeat(df[key].values, n_dims),
+        "EmbeddingID": np.tile(np.arange(n_dims), n_samples),
+        "Value": emb_array.flatten()
+    }
+
+    return pd.DataFrame(data)
 
 
 def read_generifs_basic(path: str, gene_idss: List[int]) -> pd.DataFrame:
@@ -68,7 +74,8 @@ def read_generifs_basic(path: str, gene_idss: List[int]) -> pd.DataFrame:
     Returns:
       DataFrame with columns:
         - "GeneID" (int)
-        - "embedding_0" ... "embedding_767": float vector components
+        - "EmbeddingID" (int)
+        - "Value" (float)
     """
     names = [
         "Tax ID",
@@ -105,7 +112,6 @@ def read_generifs_basic(path: str, gene_idss: List[int]) -> pd.DataFrame:
     )
     df["description"] = df["description"].apply(prepare_text)
     embeded = embed(df, "GeneID")
-
     return embeded
 
 
@@ -132,8 +138,9 @@ def read_medgen_definitions(
     Returns:
         pd.DataFrame: DataFrame containing BioBERT embeddings for each OMIM
         disease entry, with columns:
-            - "MIM number": MIM number corresponding to the disease
-            - "embedding_0" ... "embedding_767": float vector components
+            - "MIM number" (int)
+            - "EmbeddingID" (int)
+            - "Value" (float)
     """
     names = ["CUI", "DEF", "SOURCE", "SUPPRESS"]
     usecols = ["CUI", "DEF", "SOURCE"]

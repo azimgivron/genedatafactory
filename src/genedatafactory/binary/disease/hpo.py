@@ -29,4 +29,5 @@ def read_hpo(omim_id: List[int]) -> pd.DataFrame:
             data.extend([[oid, term_id] for term_id in disease.hpo])
         except KeyError:
             continue
-    return pd.DataFrame(data, columns=["MIM number", "TermID"])
+    df = pd.DataFrame(data, columns=["MIM number", "TermID"])
+    return df.drop_duplicates()

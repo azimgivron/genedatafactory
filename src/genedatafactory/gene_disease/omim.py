@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def read_omim(path: str) -> pd.DataFrame:
-    """Parse an OMIM gene–phenotype mapping file into a DataFrame.
+    """Parse an OMIM gene-phenotype mapping file into a DataFrame.
 
     This function reads a tab-separated OMIM file (e.g., `mim2gene_medgen`)
     while skipping metadata lines beginning with '#'. It infers column names
@@ -40,4 +40,5 @@ def read_omim(path: str) -> pd.DataFrame:
     df = df[["GeneID", "MIM number"]]
     df["MIM number"] = df["MIM number"].astype("int32")
     df["GeneID"] = df["GeneID"].astype("int32")
+    df = df.drop_duplicates()
     return df

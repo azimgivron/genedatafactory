@@ -73,4 +73,4 @@ def read_swissprot(dat_gz_path: str, gene_ids: List[int]) -> pd.DataFrame:
     mapping = {t: i for i, t in enumerate(df["Keyword"].drop_duplicates().to_list())}
     df["KeywordID"] = df["Keyword"].map(lambda x: mapping[x])
     df = df[["GeneID", "KeywordID"]]
-    return df
+    return df.drop_duplicates()

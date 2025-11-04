@@ -410,7 +410,7 @@ def main() -> None:
             "swissprot",
             "reactome",
             "medgen",
-            "generifs",
+            "gene_rifs",
             "clinvar",
             "string",
         }

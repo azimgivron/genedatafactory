@@ -77,7 +77,8 @@ def mondo_binary_vector(
                     if j is not None:
                         data.append((mim, j))
 
-    return pd.DataFrame(data, columns=["MIM number", "TermID"])
+    df = pd.DataFrame(data, columns=["MIM number", "TermID"])
+    return df.drop_duplicates()
 
 
 def read_mondo(path: str, disease_ids: List[str]) -> pd.DataFrame:

@@ -159,7 +159,7 @@ def make_feature_vector(
             g, cols = fut.result()
             data.extend([[g, voc_id] for voc_id in cols])
     sparse_df = pd.DataFrame(data, columns=["GeneID", "TermID"])
-    return sparse_df
+    return sparse_df.drop_duplicates()
 
 
 def read_go(GO_path: str, gene2GO_path: str, gene_ids: List[int]) -> pd.DataFrame:
