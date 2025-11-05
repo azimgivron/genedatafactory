@@ -5,7 +5,8 @@ import pandas as pd
 
 
 def count(
-    main_df: pd.DataFrame,
+    genes: Set[int],
+    diseases: Set[int],
     others: List[pd.DataFrame],
     gene_key: str = "GeneID",
     disease_key: str = "MIM number",
@@ -13,7 +14,8 @@ def count(
     """Compute intersecting gene and disease identifiers across multiple DataFrames.
 
     Args:
-        main_df (pd.DataFrame): Main DataFrame containing gene-disease associations.
+        genes (Set[int]): Set of gene IDs.
+        diseases (Set[int]): Set of disease IDs.
         others (List[pd.DataFrame]): Other DataFrames to intersect with `main_df`.
         gene_key (str, optional): Column name for gene identifiers. Defaults to "GeneID".
         disease_key (str, optional): Column name for disease identifiers. Defaults to "MIM number".
@@ -21,15 +23,11 @@ def count(
     Returns:
         Tuple[Set[int], Set[int]]: Intersected sets of gene IDs and disease IDs.
     """
-    genes = set(main_df[gene_key].astype("int32"))
-    diseases = set(main_df[disease_key].astype("int32"))
-
     for df in others:
         if gene_key in df.columns:
             genes = genes.intersection(set(df[gene_key].astype("int32")))
         elif disease_key in df.columns:
             diseases = diseases.intersection(set(df[disease_key].astype("int32")))
-
     return genes, diseases
 
 

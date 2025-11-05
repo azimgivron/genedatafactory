@@ -13,10 +13,13 @@ def read_omim(path: str) -> pd.DataFrame:
         path (str): Path to the OMIM TSV file (e.g., 'mim2gene_medgen').
 
     Returns:
-        pd.DataFrame: Filtered DataFrame containing only human phenotype
-        associations with valid GeneIDs. Columns are derived from the file header.
+        Tuple[pd.DataFrame, Set[int]]: Tuple with:
+            - Filtered DataFrame containing only human phenotype
+            associations with valid GeneIDs. Columns are
+            derived from the file header.
+            - The set of existing Genes.
     """
-    df = pd.read_csv(
+    orign = pd.read_csv(
         path,
         sep="\t",
         comment="#",
@@ -34,11 +37,11 @@ def read_omim(path: str) -> pd.DataFrame:
 
     # Filter to phenotype entries with valid GeneIDs and
     # remove non-disease, susceptibility, question and QTL, so keep confirmed
-    df = df[
-        (df["type"] == "phenotype") & (df["GeneID"] != "-") & (df["Comment"] == "-")
+    df = orign[
+        (orign["type"] == "phenotype") & (orign["GeneID"] != "-") & (orign["Comment"] == "-")
     ]
     df = df[["GeneID", "MIM number"]]
     df["MIM number"] = df["MIM number"].astype("int32")
     df["GeneID"] = df["GeneID"].astype("int32")
     df = df.drop_duplicates()
-    return df
+    return df, set(orign[orign["GeneID"] != "-"]["GeneID"].dropna().astype("int32"))

@@ -23,7 +23,7 @@ This package forms the first stage of a complete **gene prioritization pipeline*
 
 ## ⚙️ Features
 
-* 📥 **Automatic download** of reference biomedical datasets (ClinVar, OMIM, GO, UniProt, etc.)
+* 📥 **Automatic download** of reference biomedical datasets (OMIM, GO, UniProt, etc.)
 * 🧩 **Data integration** across genes, diseases, and ontology resources
 * 🧠 **Preprocessing utilities** for graph- and matrix-based representations
 * 🧾 **Reproducible exports** to CSV for downstream modeling
@@ -63,7 +63,7 @@ genedatafactory -i ./data/raw -o ./data/processed
 ### 🧩 What it does
 
 1. Checks for required datasets (downloads missing files).
-2. Processes OMIM, MEDGEN, RIFs, GO, HPO, SwissProt, Reactome, Mondo, STRING, and ClinVar data.
+2. Processes OMIM, MEDGEN, RIFs, GO, HPO, SwissProt, Reactome, Mondo, STRING data.
 3. Saves integrated and cleaned tables as CSV files in the output folder.
 
 ## 📦 Directory structure
@@ -92,7 +92,6 @@ src/
 │   └── text.py                 # Text cleaning and vectorization
 │
 ├── gene_disease/
-│   ├── clinvar.py              # ClinVar-based disease associations
 │   └── omim.py                 # OMIM-based gene–disease associations
 │
 ├── graph/
@@ -118,7 +117,6 @@ By combining these heterogeneous data types, the framework captures a **multifac
 | **Reactome**                                   | Pathway database                           | Curated molecular pathways describing how gene products interact in biological processes.                                                                       | Captures **pathway-level co-involvement**, helping identify genes participating in the same mechanistic routes as known disease genes. |
 | **MONDO (Monarch Disease Ontology)**           | Disease ontology                           | Integrates multiple disease classification systems (OMIM, Orphanet, DOID, etc.) into a unified ontology.                                                        | Provides a **hierarchical disease structure**, facilitating generalization between related disorders.                                  |
 | **STRING**                                     | Protein–protein interaction network        | Aggregates experimental and predicted gene–gene associations based on co-expression, text mining, and database co-occurrence.                                   | Encodes **topological proximity** between genes. Helps infer potential disease genes through network diffusion and embedding methods.  |
-| **ClinVar**                                    | Variant and clinical significance database | Contains clinically observed genetic variants linked to diseases, along with their interpretations (e.g., pathogenic, benign).                                  | Enables construction of a second gene disease association dataset based on variants.       |
 | **NCBI Gene References Into Function** | Gene functional descriptions              | Short, literature-derived statements summarizing experimentally supported gene functions, curated from PubMed.                                                  | Provides **textual gene-level context** for embedding with BioBERT, enriching functional representations used in prioritization.       |
 | **MedGen**                                     | Disease descriptions and concept mappings  | Integrates clinical and genetic disease concepts from OMIM, MeSH, Orphanet, and UMLS, providing standardized definitions and CUIs.                              | Supplies **concise disease definitions** for semantic embedding (via BioBERT), improving textual alignment between gene and disease concepts. |
 
@@ -126,7 +124,7 @@ By combining these heterogeneous data types, the framework captures a **multifac
 
 Each dataset represents a **different dimension of biological knowledge**:
 
-* **OMIM and ClinVar** provide *direct genetic evidence* of disease relevance.  
+* **OMIM** provide *direct genetic evidence* of disease relevance.  
 * **HPO and MONDO** describe *phenotypic and ontological relationships* among diseases.  
 * **GO, SwissProt, and Reactome** capture *functional and mechanistic similarity* among genes.  
 * **STRING** integrates *molecular interaction networks* supporting indirect association discovery.  
@@ -153,7 +151,6 @@ All datasets except the text embeddings are stored in a **sparse format**, meani
 | **Reactome Pathways**        | `reactome.csv`     | Binary feature matrix for genes across Reactome pathways. A value of **1** indicates that the gene participates in the pathway.                                                                                      |
 | **Mondo Annotations**        | `mondo.csv`        | Binary feature matrix for diseases (OMIM IDs) across all MONDO terms.                                                                                                                                                |
 | **STRING Network**           | `string.csv`       | Gene–gene interaction network derived from STRING database. Each edge represents a protein–protein interaction (PPI) with confidence scores provided by STRING.                                                      |
-| **ClinVar Variant Network**  | `clinvar.csv`      | Gene–disease association table derived from ClinVar. Each record represents a validated association between a gene (NCBI Gene ID) and a disease (OMIM ID), annotated with the confidence or clinical significance level of the association. |
 | **GENE_RIF Embeddings**      | `gene_rifs.csv`    | Text-based BioBERT embeddings of NCBI Gene descriptions extracted from GENE_RIFs (Gene References Into Function). Each row contains a gene identifier (NCBI Gene ID) and its 768-dimensional embedding vector.       |
 | **MedGen Embeddings**        | `medgen.csv`       | Text-based BioBERT embeddings of disease definitions extracted from MedGen. Each row contains a disease identifier (OMIM number) and its 768-dimensional embedding vector.                                            |
 
@@ -164,7 +161,7 @@ All datasets except the text embeddings are stored in a **sparse format**, meani
   → Represent diseases or genes in a **vectorized format** suitable for machine learning and graph-based models.
   Each column corresponds to a controlled vocabulary term, embdedding dimension or ontology concept.
 
-* **Graphs (STRING, ClinVar)**
+* **Graphs (STRING)**
   → Represent **relational structures** between genes and diseases, forming the backbone for graph-based learning tasks in gene prioritization.
 
 ## 🧩 Configuration

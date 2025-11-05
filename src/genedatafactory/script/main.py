@@ -21,7 +21,6 @@ from genedatafactory.binary.gene.reactome import read_reactome
 from genedatafactory.binary.gene.swissprot import read_swissprot
 from genedatafactory.embeddings.text import (read_generifs_basic,
                                              read_medgen_definitions)
-from genedatafactory.gene_disease.clinvar import read_clinvar
 from genedatafactory.gene_disease.omim import read_omim
 from genedatafactory.graph.string_net import read_string
 from genedatafactory.script.utils import count, new_mapping, remap
@@ -189,7 +188,7 @@ def save_df(df: pd.DataFrame, name: str, output_dir: Path) -> None:
 
 
 def process_files(
-    input_dir: Path, output_dir: Path, filter: bool, sources: Set[str]
+    input_dir: Path, output_dir: Path, filter: bool, sources: Set[str], min_genes: int = None
 ) -> None:
     """Process all data sources and export cleaned datasets to CSV.
 
@@ -199,6 +198,7 @@ def process_files(
         filter (bool): Whether to keep fully described
             genes and diseases only in OMIM dataset.
         sources (Set[str]): Set of data sources to process.
+        min_genes (int, optional): Minimum number of associated genes to be kept.
     """
     gd_path = input_dir / NAMES["OMIM"]
     generifs_basic_path = input_dir / NAMES["GENE_RIFS"]
@@ -206,7 +206,6 @@ def process_files(
     gene2go_path = input_dir / NAMES["GO_2"]
     swissprot_path = input_dir / NAMES["SWISSPROT"]
     reactome_path = input_dir / NAMES["REACTOME"]
-    clinvar_path = input_dir / NAMES["CLINVAR"]
     mondo_path = input_dir / NAMES["MONDO"]
     mgdef_path = input_dir / NAMES["MGDEF"]
     mgdef_mapping_path = input_dir / NAMES["MGDEF_MAPPING"]
@@ -215,18 +214,22 @@ def process_files(
     disease_key = "MIM number"
 
     # OMIM relationships
-    gene_disease = read_omim(str(gd_path))
-
+    gene_disease, gene_ids = read_omim(str(gd_path))
+    gene_ids = list(gene_ids)
+    
+    if min_genes is not None:
+        gene_disease = gene_disease.groupby(disease_key).filter(lambda x: x[gene_key].nunique() > min_genes)
     disease_ids = gene_disease[disease_key].drop_duplicates().astype("int32").tolist()
-    gene_ids = gene_disease[gene_key].drop_duplicates().astype("int32").tolist()
     others = []
 
     if "medgen" in sources:
         medgen = read_medgen_definitions(
             str(mgdef_path), str(mgdef_mapping_path), disease_ids
         )
+        others.append(medgen)
     if "gene_rifs" in sources:
         gene_rifs = read_generifs_basic(str(generifs_basic_path), gene_ids)
+        others.append(gene_rifs)
     if "hpo" in sources:
         hpo = read_hpo(disease_ids)
         others.append(hpo)
@@ -248,22 +251,16 @@ def process_files(
             np.unique(string.to_numpy().flatten()).T, columns=[gene_key]
         )
         others.append(string_genes)
-    if "clinvar" in sources:
-        clinvar = read_clinvar(str(clinvar_path), disease_ids)
-        clinvar = remap(clinvar, 0)
-        clinvar = remap(clinvar, 1)
 
     if filter:
         print(
             "\n⚠️  Filtering: Keep fully characterized genes and diseases (no missing feature) ⚠️"
         )
-        genes, diseases = count(gene_disease, others=others)
-
+        genes, diseases = count(set(gene_ids), set(disease_ids), others=others)
         mask = (gene_disease[gene_key].isin(genes)) & (
             gene_disease[disease_key].isin(diseases)
         )
         gene_disease = gene_disease[mask]
-        genes = set(gene_disease[gene_key])
         diseases = set(gene_disease[disease_key])
 
         gene_mapping = {
@@ -274,6 +271,7 @@ def process_files(
         }
         gene_disease = new_mapping(gene_disease, gene_key, gene_mapping)
         gene_disease = new_mapping(gene_disease, disease_key, disease_mapping)
+        gene_disease = gene_disease.rename(columns={disease_key: "DiseaseID"})
 
         if "gene_rifs" in sources:
             gene_rifs = gene_rifs[gene_rifs[gene_key].isin(genes)]
@@ -293,20 +291,25 @@ def process_files(
         if "medgen" in sources:
             medgen = medgen[medgen[disease_key].isin(diseases)]
             medgen = new_mapping(medgen, disease_key, disease_mapping)
+            medgen = medgen.rename(columns={disease_key: "DiseaseID"})
         if "hpo" in sources:
             hpo = hpo[hpo[disease_key].isin(diseases)]
             hpo = new_mapping(hpo, disease_key, disease_mapping)
             hpo = remap(hpo, 1)
+            hpo = hpo.rename(columns={disease_key: "DiseaseID"})
         if "mondo" in sources:
             mondo = mondo[mondo[disease_key].isin(diseases)]
             mondo = new_mapping(mondo, disease_key, disease_mapping)
             mondo = remap(mondo, 1)
+            mondo = mondo.rename(columns={disease_key: "DiseaseID"})
         if "string" in sources:
             string = string[string[f"{gene_key}_i"].isin(genes)]
             string = string[string[f"{gene_key}_j"].isin(genes)]
             string = new_mapping(string, f"{gene_key}_i", gene_mapping)
             string = new_mapping(string, f"{gene_key}_j", gene_mapping)
+        disease_key = "DiseaseID"
 
+    print(f"Total number of genes: {len(genes)}")
     report("Gene Disease data", gene_disease, [gene_key, disease_key])
     save_df(gene_disease, "gene_disease", output_dir)
 
@@ -334,9 +337,6 @@ def process_files(
     if "string" in sources:
         report_string(string)
         save_df(string, "string", output_dir)
-    if "clinvar" in sources:
-        report("Clinvar data", clinvar, [gene_key])
-        save_df(clinvar, "clinvar", output_dir)
 
 
 def parse_args() -> argparse.Namespace:
@@ -380,10 +380,17 @@ def parse_args() -> argparse.Namespace:
             "reactome",
             "medgen",
             "gene_rifs",
-            "clinvar",
             "string",
         ],
         help="Optional list of data sources to process (e.g., go hpo).",
+    )
+    p.add_argument(
+        "-g",
+        "--min-genes",
+        type=int,
+        required=False,
+        default=None,
+        help="Optional minimum number of genes for a disease to be kept (default: %(default)s).",
     )
     return p.parse_args()
 
@@ -411,11 +418,10 @@ def main() -> None:
             "reactome",
             "medgen",
             "gene_rifs",
-            "clinvar",
             "string",
         }
     )
-    process_files(args.input, args.output, args.filter, sources)
+    process_files(args.input, args.output, args.filter, sources, min_genes=args.min_genes)
 
 
 if __name__ == "__main__":

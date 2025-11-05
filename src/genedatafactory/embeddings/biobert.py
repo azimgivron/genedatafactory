@@ -77,7 +77,7 @@ class BioBERTMeanEncoder:
         """
         embs = []
         if self.device == "mps":
-            batch_size = 96  # Apple GPU handles larger batches well
+            batch_size = 128
         elif self.device == "cuda":
             batch_size = 64
         else:
