@@ -38,7 +38,9 @@ def read_omim(path: str) -> pd.DataFrame:
     # Filter to phenotype entries with valid GeneIDs and
     # remove non-disease, susceptibility, question and QTL, so keep confirmed
     df = orign[
-        (orign["type"] == "phenotype") & (orign["GeneID"] != "-") & (orign["Comment"] == "-")
+        (orign["type"] == "phenotype")
+        & (orign["GeneID"] != "-")
+        & (orign["Comment"] == "-")
     ]
     df = df[["GeneID", "MIM number"]]
     df["MIM number"] = df["MIM number"].astype("int32")

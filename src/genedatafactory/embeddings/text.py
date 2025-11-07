@@ -54,7 +54,7 @@ def embed(df: pd.DataFrame, key: str) -> pd.DataFrame:
     data = {
         key: np.repeat(df[key].values, n_dims),
         "EmbeddingID": np.tile(np.arange(n_dims), n_samples),
-        "Value": emb_array.flatten()
+        "Value": emb_array.flatten(),
     }
 
     return pd.DataFrame(data)

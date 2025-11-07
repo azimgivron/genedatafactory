@@ -152,6 +152,31 @@ def get_edges(
     return edges
 
 
+def ensure_symmetric_edges(df: pd.DataFrame) -> pd.DataFrame:
+    """Ensure for every (i, j, w) there is a (j, i, w) with identical weight.
+
+    If both directions exist with different weights, we resolve to a single
+    undirected weight per pair (default: mean), then duplicate to both directions.
+
+    Args:
+        df (pd.DataFrame): Graph adjacency matrix.
+
+    Returns:
+        pd.DataFrame: Symmetric graph adjacency matrix.
+    """
+    tmp = df.copy()
+    u = tmp[["GeneID_i", "GeneID_j"]].min(axis=1)
+    v = tmp[["GeneID_i", "GeneID_j"]].max(axis=1)
+    tmp["u"], tmp["v"] = u, v
+    agg = tmp.groupby(["u", "v"], as_index=False)["Weight"].mean()
+    fwd = agg.rename(columns={"u": "GeneID_i", "v": "GeneID_j"})
+    bkd = agg.rename(columns={"u": "GeneID_j", "v": "GeneID_i"})
+    sym = pd.concat([fwd, bkd], ignore_index=True)
+    sym = sym.astype({"GeneID_i": int, "GeneID_j": int, "Weight": float})
+    sym = sym.sort_values(["GeneID_i", "GeneID_j"]).reset_index(drop=True)
+    return sym
+
+
 def read_string(
     url_map: str,
     url_net: str,
@@ -191,4 +216,6 @@ def read_string(
     edges = get_edges(
         mapped_ncbi, net_batch, string_to_ncbi, species, caller, url_net, sleep_s
     )
+    # Enforce symmetric representation
+    edges = ensure_symmetric_edges(edges)
     return edges

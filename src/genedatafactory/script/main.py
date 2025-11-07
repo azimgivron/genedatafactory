@@ -19,8 +19,7 @@ from genedatafactory.binary.disease.mondo import read_mondo
 from genedatafactory.binary.gene.go import read_go
 from genedatafactory.binary.gene.reactome import read_reactome
 from genedatafactory.binary.gene.swissprot import read_swissprot
-from genedatafactory.embeddings.text import (read_generifs_basic,
-                                             read_medgen_definitions)
+from genedatafactory.embeddings.text import read_generifs_basic, read_medgen_definitions
 from genedatafactory.gene_disease.omim import read_omim
 from genedatafactory.graph.string_net import read_string
 from genedatafactory.script.utils import count, new_mapping, remap
@@ -188,7 +187,11 @@ def save_df(df: pd.DataFrame, name: str, output_dir: Path) -> None:
 
 
 def process_files(
-    input_dir: Path, output_dir: Path, filter: bool, sources: Set[str], min_genes: int = None
+    input_dir: Path,
+    output_dir: Path,
+    filter: bool,
+    sources: Set[str],
+    min_genes: int = None,
 ) -> None:
     """Process all data sources and export cleaned datasets to CSV.
 
@@ -216,9 +219,11 @@ def process_files(
     # OMIM relationships
     gene_disease, gene_ids = read_omim(str(gd_path))
     gene_ids = list(gene_ids)
-    
+
     if min_genes is not None:
-        gene_disease = gene_disease.groupby(disease_key).filter(lambda x: x[gene_key].nunique() > min_genes)
+        gene_disease = gene_disease.groupby(disease_key).filter(
+            lambda x: x[gene_key].nunique() > min_genes
+        )
     disease_ids = gene_disease[disease_key].drop_duplicates().astype("int32").tolist()
     others = []
 
@@ -421,7 +426,9 @@ def main() -> None:
             "string",
         }
     )
-    process_files(args.input, args.output, args.filter, sources, min_genes=args.min_genes)
+    process_files(
+        args.input, args.output, args.filter, sources, min_genes=args.min_genes
+    )
 
 
 if __name__ == "__main__":
