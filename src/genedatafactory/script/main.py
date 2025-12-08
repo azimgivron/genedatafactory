@@ -318,11 +318,8 @@ def process_files(
     report("Gene Disease data", gene_disease, [gene_key, disease_key])
     save_df(gene_disease, "gene_disease", output_dir)
 
-    meta = {
-        "nb_genes": len(genes),
-        "nb_diseases": len(diseases)
-    }
-    with open(output_dir/"meta.yaml", 'w') as stream:
+    meta = {"nb_genes": len(genes), "nb_diseases": len(diseases)}
+    with open(output_dir / "meta.yaml", "w") as stream:
         yaml.dump(meta, stream)
 
     if "medgen" in sources:
