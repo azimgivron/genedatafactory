@@ -1,16 +1,14 @@
+import argparse
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
+import pandas as pd
 import torch
 
 from genedatafactory.synthetic.sample_compute import (
-    compute_disease_factors,
-    compute_gene_factors,
-    sample_disease_features,
-    sample_gene_features_and_graph,
-    sample_gene_latents,
-    sample_interactions,
-)
+    compute_disease_factors, compute_gene_factors, sample_disease_features,
+    sample_gene_features_and_graph, sample_gene_latents, sample_interactions)
 from genedatafactory.synthetic.synthetic_config import SyntheticConfig
 
 
@@ -68,19 +66,82 @@ def generate_synthetic_dataset(
     return out
 
 
-if __name__ == "__main__":
+def dense_to_coo(
+    df_array: np.ndarray, row_name: str, col_name: str, value_name: str = "Value"
+) -> pd.DataFrame:
+    """
+    Convert a dense 2D numpy array into a COO-like DataFrame:
+    (row_index, col_index, value), only for non-zero entries.
+    """
+    if df_array.ndim != 2:
+        raise ValueError(f"Expected 2D array, got shape {df_array.shape}")
+
+    rows, cols = np.nonzero(df_array)  # indices of non-zero entries
+    values = df_array[rows, cols]
+
+    return pd.DataFrame(
+        {
+            row_name: rows,
+            col_name: cols,
+            value_name: values,
+        }
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for input and output directories.
+
+    Returns:
+        Parsed CLI arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description=("🧬 Generated Synthetic Gene-Disease Data."),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        required=True,
+        help="Folder to write processed CSV files.",
+    )
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
     cfg = SyntheticConfig()
 
     data = generate_synthetic_dataset(cfg, seed=42, device="cpu")
 
-    R = data["R"]
-    U = data["U"]
-    W = data["W"]
-    X = data["X"]
-    Y = data["Y"]
+    association = data["R"]  # shape: (n_genes, n_diseases)
+    gene = data["X"]  # shape: (n_genes, n_gene_features)
+    disease = data["Y"]  # shape: (n_diseases, n_disease_features)
+    ppi = data["A_X"]  # assuming dense adjacency: (n_genes, n_genes)
 
-    print("R shape:", R.shape, R.sum() / R.size * 100)
-    print("U shape:", U.shape)
-    print("W shape:", W.shape)
-    print("X shape:", X.shape)
-    print("Y shape:", Y.shape)
+    print(
+        "association shape:",
+        association.shape,
+        association.sum() / association.size * 100,
+    )
+    print("gene shape:", gene.shape)
+    print("disease shape:", disease.shape)
+    print("ppi shape:", ppi.shape)
+
+    # Convert all dense matrices to COO-like triplets
+    assoc_df = dense_to_coo(
+        association, row_name="Gene ID", col_name="Disease ID", value_name="Value"
+    )
+    gene_df = dense_to_coo(
+        gene, row_name="Gene ID", col_name="Feature ID", value_name="Value"
+    )
+    disease_df = dense_to_coo(
+        disease, row_name="Disease ID", col_name="Feature ID", value_name="Value"
+    )
+    ppi_df = dense_to_coo(ppi, row_name="Gene_i", col_name="Gene_j", value_name="Value")
+
+    # Save to CSV (without pandas index)
+    assoc_df.to_csv(args.output / "gene_disease.csv", index=False)
+    gene_df.to_csv(args.output / "gene_si.csv", index=False)
+    disease_df.to_csv(args.output / "disease_si.csv", index=False)
+    ppi_df.to_csv(args.output / "string.csv", index=False)

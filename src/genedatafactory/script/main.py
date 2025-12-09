@@ -19,7 +19,8 @@ from genedatafactory.binary.disease.mondo import read_mondo
 from genedatafactory.binary.gene.go import read_go
 from genedatafactory.binary.gene.reactome import read_reactome
 from genedatafactory.binary.gene.swissprot import read_swissprot
-from genedatafactory.embeddings.text import read_generifs_basic, read_medgen_definitions
+from genedatafactory.embeddings.text import (read_generifs_basic,
+                                             read_medgen_definitions)
 from genedatafactory.gene_disease.omim import read_omim
 from genedatafactory.graph.string_net import read_string
 from genedatafactory.script.utils import count, new_mapping, remap
