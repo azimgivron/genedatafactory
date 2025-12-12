@@ -1,11 +1,12 @@
 from typing import Tuple
 
 import numpy as np
-import torch
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import norm
+import torch 
 
-from genedatafactory.synthetic.models import FixedGCN, FixedMLP
+from genedatafactory.synthetic.models import (FixedGCN,
+                                              FixedMLP)
 from genedatafactory.synthetic.synthetic_config import SyntheticConfig
 
 
@@ -15,19 +16,18 @@ def sample_gene_latents(
     """Sample latent gene variables H along with their mixture parameters.
 
     Args:
-        config (SyntheticConfig): Holds mixture sizes and noise scales.
+        config (SyntheticConfig): Mixture sizes and noise scales.
 
     Returns:
-        tuple: (H, pi, gene_component_means, z_genes) where:
-            H (ndarray): Shape (n_genes, L_gene_latent) with latent embeddings.
-            pi (ndarray): Mixture weights for genes.
-            gene_component_means (ndarray): Component means for H.
-            z_genes (ndarray): Mixture assignments for each gene.
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: (H, pi,
+        gene_component_means, z_genes) where H has shape (n_genes,
+        L_gene_latent), pi are mixture weights, gene_component_means are
+        component means, and z_genes are mixture assignments.
     """
     pi = np.random.dirichlet([config.dirichlet_conc_genes] * config.D_gene_components)
     gene_component_means = np.random.randn(
         config.D_gene_components, config.L_gene_latent
-    )
+    ).astype(np.float32)
     z_genes = np.random.choice(config.D_gene_components, size=config.n_genes, p=pi)
 
     H = np.zeros((config.n_genes, config.L_gene_latent), dtype=np.float32)
@@ -39,18 +39,17 @@ def sample_gene_latents(
 
 
 def sample_gene_features_and_graph(
-    config: SyntheticConfig, H: np.ndarray, device: str
-) -> Tuple[torch.Tensor, np.ndarray, torch.Tensor]:
+    config: SyntheticConfig, H: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Generate gene features X from latent H and build a random geometric graph.
 
     Args:
         config (SyntheticConfig): Feature sizes and graph scale.
         H (ndarray): Latent gene matrix of shape (n_genes, L_gene_latent).
-        device (str): Torch device for returned tensors.
 
     Returns:
-        tuple: (X_t, A_X, edge_index) with torch features, readout matrix,
-        and edge indices for the gene graph.
+        Tuple[np.ndarray, np.ndarray, np.ndarray]: (X, A_X, A_mat) with numpy
+        features, readout matrix, and the symmetric adjacency matrix.
     """
     A_X = np.random.randn(config.d_X, config.L_gene_latent).astype(np.float32)
     X = (A_X @ H.T).T
@@ -65,108 +64,100 @@ def sample_gene_features_and_graph(
     A_mat = np.triu(A_mat, 1)
     A_mat = A_mat + A_mat.T
 
-    row_idx, col_idx = np.nonzero(A_mat)
-    edge_index = torch.tensor(
-        np.vstack([row_idx, col_idx]),
-        dtype=torch.long,
-        device=device,
-    )
-    X_t = torch.tensor(X, dtype=torch.float32, device=device)
-    return X_t, A_X, edge_index
+    return X.astype(np.float32), A_X, A_mat
 
 
 def compute_gene_factors(
-    config: SyntheticConfig, X_t: torch.Tensor, edge_index, device
-) -> torch.Tensor:
-    """Apply the frozen GCN to produce noisy gene factors U.
+    config: SyntheticConfig, H: np.ndarray, edge_index: np.ndarray, device: str
+) -> np.ndarray:
+    """Apply a linear GCN-style projection to produce noisy gene factors U.
 
     Args:
         config (SyntheticConfig): Architecture and noise settings.
-        X_t (Tensor): Gene features on the target device.
-        edge_index (Tensor): Edge indices for the gene graph.
-        device (str): Torch device for the model.
+        H (ndarray): Gene features.
+        edge_index (ndarray): Edge indices for the gene graph.
 
     Returns:
-        Tensor: Shape (n_genes, k_latent) containing gene factors.
+        np.ndarray: Shape (n_genes, k_latent) containing gene factors.
     """
     gnn = FixedGCN(
-        in_dim=config.d_X,
+        in_dim=config.L_gene_latent,
         hidden_dims=config.gnn_hidden_dims,
         out_dim=config.k_latent,
     ).to(device)
     with torch.no_grad():
-        mu_U = gnn(X_t, edge_index)
-    return mu_U + config.sigma_U * torch.randn_like(mu_U)
+        mu_U = gnn(torch.from_numpy(H).to(device), torch.from_numpy(edge_index).to(device))
+    return (mu_U + config.sigma_U * torch.randn_like(mu_U)).numpy()
 
 
 def sample_disease_features(
     config: SyntheticConfig,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Sample disease features Y from a Gaussian mixture and return mixture stats.
+    """Sample disease features D from a Gaussian mixture and return mixture stats.
 
     Args:
         config (SyntheticConfig): Holds mixture sizes and feature dimensions.
 
     Returns:
-        tuple: (Y, rho, disease_component_means, z_diseases) where Y has
-        shape (n_diseases, d_Y).
+        Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: (D, rho,
+        disease_component_means, z_diseases) where D has shape
+        (n_diseases, L_disease_latent).
     """
     rho = np.random.dirichlet(
         [config.dirichlet_conc_diseases] * config.C_disease_components
     )
     disease_component_means = np.random.randn(
-        config.C_disease_components, config.d_Y
+        config.C_disease_components, config.L_disease_latent
     ).astype(np.float32)
     z_diseases = np.random.choice(
         config.C_disease_components, size=config.n_diseases, p=rho
     )
 
-    Y = np.zeros((config.n_diseases, config.d_Y), dtype=np.float32)
+    D = np.zeros((config.n_diseases, config.L_disease_latent), dtype=np.float32)
     for j, component in enumerate(z_diseases):
-        Y[j] = disease_component_means[component] + config.sigma_Y * np.random.randn(
-            config.d_Y
+        D[j] = disease_component_means[component] + config.sigma_D * np.random.randn(
+            config.L_disease_latent
         )
-    return Y, rho, disease_component_means, z_diseases
+    return D, rho, disease_component_means, z_diseases
 
 
 def compute_disease_factors(
-    config: SyntheticConfig, Y_t: torch.Tensor, device
-) -> torch.Tensor:
-    """Apply the frozen MLP to produce noisy disease factors W.
+    config: SyntheticConfig, D: np.ndarray, device: str
+) -> np.ndarray:
+    """Apply a linear projection to produce noisy disease factors W.
 
     Args:
         config (SyntheticConfig): Architecture and noise settings.
-        Y_t (Tensor): Disease features on the target device.
-        device (str): Torch device for the model.
+        D (np.ndarray): Disease latents.
+        device (str): Device on which to run the network.
 
     Returns:
-        Tensor: Shape (n_diseases, k_latent) containing disease factors.
+        np.ndarray: Shape (n_diseases, k_latent) containing disease factors.
     """
     disease_mlp = FixedMLP(
-        in_dim=config.d_Y,
+        in_dim=config.L_disease_latent,
         hidden_dims=config.disease_mlp_hidden_dims,
         out_dim=config.k_latent,
     ).to(device)
     with torch.no_grad():
-        mu_W = disease_mlp(Y_t)
-    return mu_W + config.sigma_W * torch.randn_like(mu_W)
+        mu_W = disease_mlp(torch.from_numpy(D).to(device))
+    return (mu_W + config.sigma_W * torch.randn_like(mu_W)).numpy()
 
 
 def sample_interactions(
-    U_t: torch.Tensor, W_t: torch.Tensor, bias: float, sigma_z: float
+    U: np.ndarray, W: np.ndarray, bias: float, sigma_z: float
 ) -> np.ndarray:
     """Sample binary interactions R with a probit link over U and W.
 
     Args:
-        U_t (Tensor): Gene factor matrix of shape (n_genes, k_latent).
-        W_t (Tensor): Disease factor matrix of shape (n_diseases, k_latent).
+        U (ndarray): Gene factor matrix of shape (n_genes, k_latent).
+        W (ndarray): Disease factor matrix of shape (n_diseases, k_latent).
         bias (float): Bias term inside the probit link.
         sigma_z (float): Noise scale in the probit link.
 
     Returns:
-        ndarray: Shape (n_genes, n_diseases) with binary interactions.
+        np.ndarray: Shape (n_genes, n_diseases) with binary interactions.
     """
-    scores = U_t @ W_t.t()
+    scores = U @ W.T
     probs = norm.cdf((scores + bias) / sigma_z)
-    rng = np.random.default_rng()
-    return rng.binomial(1, probs)
+    return np.random.binomial(1, probs)

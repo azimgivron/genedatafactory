@@ -4,7 +4,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
-import torch
+import yaml
 
 from genedatafactory.synthetic.sample_compute import (
     compute_disease_factors, compute_gene_factors, sample_disease_features,
@@ -25,36 +25,40 @@ def generate_synthetic_dataset(
 
     Args:
         config (SyntheticConfig): Controls sizes, noise scales, and architectures.
-        seed (int): Random seed applied to numpy and torch.
-        device (str): Torch device for generated tensors.
+        seed (int): Random seed applied to numpy RNG.
+        device (str): The device on which to the NNs.
 
     Returns:
         dict[str, np.ndarray]: Mapping containing numpy arrays for R, U, W,
-        X, Y, edge_index, H_latent_genes, z_genes, gene_mixture_weights,
+        X, Y, edge_index, H_latent_genes, D_latent_disease, z_genes, gene_mixture_weights,
         gene_component_means, z_diseases, disease_mixture_weights,
-        disease_component_means, and A_X.
+        disease_component_means, and A_X and A_Y.
     """
     np.random.seed(seed)
-    torch.manual_seed(seed)
 
     H, pi, gene_component_means, z_genes = sample_gene_latents(config)
-    X_t, A_X, edge_index = sample_gene_features_and_graph(config, H, device)
-    U_t = compute_gene_factors(config, X_t, edge_index, device)
+    X, A_X, A_mat = sample_gene_features_and_graph(config, H)
+    row_idx, col_idx = np.nonzero(A_mat)
+    edge_index = np.vstack([row_idx, col_idx]).astype(np.int64)
+    U = compute_gene_factors(config, H, edge_index, device)
 
-    Y, rho, disease_component_means, z_diseases = sample_disease_features(config)
-    Y_t = torch.tensor(Y, dtype=torch.float32, device=device)
-    W_t = compute_disease_factors(config, Y_t, device)
+    D, rho, disease_component_means, z_diseases = sample_disease_features(config)
+    A_Y = np.random.randn(config.d_Y, config.L_disease_latent).astype(np.float32)
+    Y = (A_Y @ D.T).T
+    Y += config.sigma_Y * np.random.randn(config.n_diseases, config.d_Y).astype(np.float32)
+    W = compute_disease_factors(config, D, device)
 
-    R_t = sample_interactions(U_t, W_t, config.bias, config.sigma_z)
+    R = sample_interactions(U, W, config.bias, config.sigma_z)
 
     out = {
-        "R": np.array(R_t, copy=False),
-        "U": U_t.detach().cpu().numpy(),
-        "W": W_t.detach().cpu().numpy(),
-        "X": X_t.detach().cpu().numpy(),
-        "Y": Y_t.detach().cpu().numpy(),
-        "edge_index": edge_index.detach().cpu().numpy(),
+        "R": np.array(R, copy=False),
+        "U": np.array(U, copy=False),
+        "W": np.array(W, copy=False),
+        "X": np.array(X, copy=False),
+        "Y": np.array(Y, copy=False),
+        "edge_index": np.array(edge_index, copy=False),
         "H_latent_genes": np.array(H, copy=False),
+        "D_latent_disease": np.array(D, copy=False),
         "z_genes": np.array(z_genes, copy=False),
         "gene_mixture_weights": np.array(pi, copy=False),
         "gene_component_means": np.array(gene_component_means, copy=False),
@@ -62,6 +66,7 @@ def generate_synthetic_dataset(
         "disease_mixture_weights": np.array(rho, copy=False),
         "disease_component_means": np.array(disease_component_means, copy=False),
         "A_X": np.array(A_X, copy=False),
+        "A_Y": np.array(A_Y, copy=False),
     }
     return out
 
@@ -110,6 +115,9 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+    output: Path = args.output
+    output.mkdir(parents=True, exist_ok=True)
+
     cfg = SyntheticConfig()
 
     data = generate_synthetic_dataset(cfg, seed=42, device="cpu")
@@ -117,12 +125,12 @@ def main():
     association = data["R"]  # shape: (n_genes, n_diseases)
     gene = data["X"]  # shape: (n_genes, n_gene_features)
     disease = data["Y"]  # shape: (n_diseases, n_disease_features)
-    ppi = data["A_X"]  # assuming dense adjacency: (n_genes, n_genes)
+    ppi = data["edge_index"]  # COO edge list of connected genes
 
     print(
         "association shape:",
         association.shape,
-        association.sum() / association.size * 100,
+        f"{association.sum() / association.size * 100:.3f}%",
     )
     print("gene shape:", gene.shape)
     print("disease shape:", disease.shape)
@@ -131,17 +139,24 @@ def main():
     # Convert all dense matrices to COO-like triplets
     assoc_df = dense_to_coo(
         association, row_name="Gene ID", col_name="Disease ID", value_name="Value"
-    )
+    ).drop(columns=["Value"])
     gene_df = dense_to_coo(
         gene, row_name="Gene ID", col_name="Feature ID", value_name="Value"
     )
     disease_df = dense_to_coo(
         disease, row_name="Disease ID", col_name="Feature ID", value_name="Value"
     )
-    ppi_df = dense_to_coo(ppi, row_name="Gene_i", col_name="Gene_j", value_name="Value")
+    ppi_df = pd.DataFrame(ppi.T, columns=["Gene_i", "Gene_j"])
 
     # Save to CSV (without pandas index)
-    assoc_df.to_csv(args.output / "gene_disease.csv", index=False)
-    gene_df.to_csv(args.output / "gene_si.csv", index=False)
-    disease_df.to_csv(args.output / "disease_si.csv", index=False)
-    ppi_df.to_csv(args.output / "string.csv", index=False)
+    assoc_df.to_csv(output / "gene_disease.csv", index=False)
+    gene_df.to_csv(output / "gene_si.csv", index=False)
+    disease_df.to_csv(output / "disease_si.csv", index=False)
+    ppi_df.to_csv(output / "string.csv", index=False)
+
+    meta = {
+        "nb_genes": association.shape[0],
+        "nb_diseases": association.shape[1]
+    }
+    with open(output/"meta.yaml", "w") as stream:
+        yaml.dump(meta, stream)

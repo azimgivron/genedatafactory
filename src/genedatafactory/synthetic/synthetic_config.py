@@ -14,8 +14,8 @@ class SyntheticConfig:
         L_gene_latent (int): Dimension of latent H_i vectors.
         D_gene_components (int): Number of Gaussian mixture components for genes.
         C_disease_components (int): Number of Gaussian mixture components for diseases.
-        gnn_hidden_dims (tuple): Hidden layer sizes for the fixed GCN.
-        disease_mlp_hidden_dims (tuple): Hidden layer sizes for the fixed disease MLP.
+        gnn_hidden_dims (tuple): Linear layer sizes for the fixed 3-hop graph projection.
+        disease_mlp_hidden_dims (tuple): Linear layer sizes for the fixed disease projection.
         sigma_H (float): Stddev for sampling latent gene components.
         sigma_X (float): Stddev for gene feature noise.
         sigma_Y (float): Stddev for disease feature noise.
@@ -35,6 +35,7 @@ class SyntheticConfig:
     d_X: int = 256  # gene feature dimension
     d_Y: int = 256  # disease feature dimension
     L_gene_latent: int = 64  # dimension of H_i
+    L_disease_latent: int = 64  # dimension of D_j
     D_gene_components: int = 100  # # gene mixture components
     C_disease_components: int = 20  # # disease mixture components
 
@@ -43,14 +44,15 @@ class SyntheticConfig:
     disease_mlp_hidden_dims: tuple = (64, 32)  # layers for g0(Y)
 
     # Noise scales / variances
-    sigma_H: float = 1.0
-    sigma_X: float = 0.2
-    sigma_Y: float = 0.2
-    sigma_U: float = 0.2
-    sigma_W: float = 0.2
+    sigma_H: float = 0.05
+    sigma_D: float = 0.05
+    sigma_X: float = 0.05
+    sigma_Y: float = 0.05
+    sigma_U: float = 0.05
+    sigma_W: float = 0.05
 
     # Random geometric graph scale
-    eta: float = 2.0
+    eta: float = .5
 
     # Mixture Dirichlet concentrations
     dirichlet_conc_genes: float = 1.0
@@ -58,4 +60,4 @@ class SyntheticConfig:
 
     # Binary causal link
     sigma_z: float = 1.0
-    bias: float = -16.1
+    bias: float = -2.4e0

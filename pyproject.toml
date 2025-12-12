@@ -21,6 +21,7 @@ dynamic = ["version", "dependencies"]
 
 [project.scripts]
 genedatafactory = "genedatafactory.script.main:main"
+synthesize = "genedatafactory.script.synthesize:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
