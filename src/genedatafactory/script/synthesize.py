@@ -15,7 +15,6 @@ from genedatafactory.synthetic.synthetic_config import SyntheticConfig
 def generate_synthetic_dataset(
     config: SyntheticConfig,
     seed: int = 0,
-    device: str = "cpu",
 ) -> Dict[str, np.ndarray]:
     """Generate a synthetic gene–disease dataset with hierarchical structure.
 
@@ -26,7 +25,6 @@ def generate_synthetic_dataset(
     Args:
         config (SyntheticConfig): Controls sizes, noise scales, and architectures.
         seed (int): Random seed applied to numpy RNG.
-        device (str): The device on which to the NNs.
 
     Returns:
         dict[str, np.ndarray]: Mapping containing numpy arrays for R, U, W,
@@ -40,13 +38,13 @@ def generate_synthetic_dataset(
     X, A_X, A_mat = sample_gene_features_and_graph(config, H)
     row_idx, col_idx = np.nonzero(A_mat)
     edge_index = np.vstack([row_idx, col_idx]).astype(np.int64)
-    U = compute_gene_factors(config, H, edge_index, device)
+    U = compute_gene_factors(config, H, A_mat)
 
     D, rho, disease_component_means, z_diseases = sample_disease_features(config)
     A_Y = np.random.randn(config.d_Y, config.L_disease_latent).astype(np.float32)
     Y = (A_Y @ D.T).T
     Y += config.sigma_Y * np.random.randn(config.n_diseases, config.d_Y).astype(np.float32)
-    W = compute_disease_factors(config, D, device)
+    W = compute_disease_factors(config, D, U)
 
     R = sample_interactions(U, W, config.bias, config.sigma_z)
 
@@ -120,7 +118,7 @@ def main():
 
     cfg = SyntheticConfig()
 
-    data = generate_synthetic_dataset(cfg, seed=42, device="cpu")
+    data = generate_synthetic_dataset(cfg, seed=42)
 
     association = data["R"]  # shape: (n_genes, n_diseases)
     gene = data["X"]  # shape: (n_genes, n_gene_features)
